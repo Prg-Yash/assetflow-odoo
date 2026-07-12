@@ -44,12 +44,50 @@ export const createInvite = async (
       throw new ApiError(400, "email and roleId are required");
     }
 
+    // 1. Check if the user is already a member of this organization (including the owner)
+    const existingUser = await db.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      const existingMember = await db.organizationMember.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId,
+            userId: existingUser.id,
+          },
+        },
+      });
+
+      if (existingMember) {
+        throw new ApiError(400, "This user already exists in the organization.");
+      }
+    }
+
+    // 2. Check if there is already an active invitation pending for this email in this organization
+    const existingInvite = await db.invite.findFirst({
+      where: {
+        organizationId,
+        email,
+        accepted: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (existingInvite) {
+      throw new ApiError(400, "An active invitation has already been sent to this email address.");
+    }
+
     const role = await db.role.findFirst({
       where: { id: roleId, organizationId },
     });
 
     if (!role) {
       throw new ApiError(404, "Role not found in organization");
+    }
+
+    if (role.roleType === "ADMIN") {
+      throw new ApiError(403, "Inviting workspace administrators is not allowed.");
     }
 
     const org = await db.organization.findUnique({
@@ -127,8 +165,14 @@ export const acceptInvite = async (
       include: { role: true },
     });
 
-    if (!invite || invite.accepted) {
-      throw new ApiError(400, "Invalid or already accepted invite token");
+    console.log("[acceptInvite] Received token to verify:", token);
+
+    if (!invite) {
+      throw new ApiError(400, `Invite token not found: ${token}`);
+    }
+
+    if (invite.accepted) {
+      throw new ApiError(400, "This invitation has already been accepted");
     }
 
     if (new Date() > invite.expiresAt) {

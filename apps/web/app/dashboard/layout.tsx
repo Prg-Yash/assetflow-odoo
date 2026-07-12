@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useSession } from '@/hooks/use-organizations'
+import { useSession, useOrganizations } from '@/hooks/use-organizations'
 import {
   BarChart3,
   Bell,
@@ -22,23 +22,57 @@ import {
   Wrench,
   X,
   User,
+  FileCheck,
 } from 'lucide-react'
 import { ThemeToggle } from '../components/theme-toggle'
 import { signOut } from '../auth/auth-api'
 import { BrandLogo } from '../components/brand-logo'
 
-/* ─── Nav items for Organization Mode ─────────────────────────────────────────── */
-const ORG_NAV = [
-  { href: '/dashboard/[organizationId]',      label: 'Dashboard',             icon: LayoutDashboard },
-  { href: '/dashboard/[organizationId]/setup',         label: 'Organization Setup',    icon: Settings },
-  { href: '/dashboard/[organizationId]/assets',        label: 'Assets',                icon: Package },
-  { href: '/dashboard/[organizationId]/transfer',      label: 'Allocation & Transfer', icon: ArrowLeftRight },
-  { href: '/dashboard/[organizationId]/booking',       label: 'Resource Booking',      icon: BookOpen },
-  { href: '/dashboard/[organizationId]/maintainence',  label: 'Maintenance',           icon: Wrench },
-  { href: '/dashboard/[organizationId]/audit',         label: 'Audit',                 icon: ClipboardList },
-  { href: '/dashboard/[organizationId]/reports',       label: 'Reports',               icon: BarChart3 },
-  { href: '/dashboard/[organizationId]/notifications', label: 'Notifications',         icon: Bell },
-]
+/* ─── Nav items builder for Dynamic Sidebar ─────────────────────────────────────────── */
+function getNavItems(userRole: string) {
+  const items = [
+    { href: '/dashboard/[organizationId]', label: 'Dashboard', icon: LayoutDashboard },
+  ]
+
+  if (userRole === 'ADMIN') {
+    items.push(
+      { href: '/dashboard/[organizationId]/setup', label: 'Organization Setup', icon: Settings },
+      { href: '/dashboard/[organizationId]/assets', label: 'Assets', icon: Package },
+      { href: '/dashboard/[organizationId]/transfer', label: 'Allocation & Transfer', icon: ArrowLeftRight },
+      { href: '/dashboard/[organizationId]/booking', label: 'Resource Booking', icon: BookOpen },
+      { href: '/dashboard/[organizationId]/maintainence', label: 'Maintenance', icon: Wrench },
+      { href: '/dashboard/[organizationId]/audit', label: 'Audit', icon: ClipboardList },
+      { href: '/dashboard/[organizationId]/reports', label: 'Reports', icon: BarChart3 },
+      { href: '/dashboard/[organizationId]/notifications', label: 'Notifications', icon: Bell },
+      { href: '/dashboard/[organizationId]/approvals', label: 'Approval Requests', icon: FileCheck }
+    )
+  } else if (userRole === 'ASSET_MANAGER') {
+    items.push(
+      { href: '/dashboard/[organizationId]/assets', label: 'Assets', icon: Package },
+      { href: '/dashboard/[organizationId]/transfer', label: 'Allocation & Transfer', icon: ArrowLeftRight },
+      { href: '/dashboard/[organizationId]/booking', label: 'Resource Booking', icon: BookOpen },
+      { href: '/dashboard/[organizationId]/maintainence', label: 'Maintenance', icon: Wrench },
+      { href: '/dashboard/[organizationId]/approvals', label: 'Approval Requests', icon: FileCheck },
+      { href: '/dashboard/[organizationId]/reports', label: 'Reports', icon: BarChart3 },
+      { href: '/dashboard/[organizationId]/notifications', label: 'Notifications', icon: Bell }
+    )
+  } else if (userRole === 'AUDITOR') {
+    items.push(
+      { href: '/dashboard/[organizationId]/audit', label: 'Audit', icon: ClipboardList },
+      { href: '/dashboard/[organizationId]/reports', label: 'Reports', icon: BarChart3 },
+      { href: '/dashboard/[organizationId]/notifications', label: 'Notifications', icon: Bell }
+    )
+  } else {
+    // Employee, Technician, or others
+    items.push(
+      { href: '/dashboard/[organizationId]/my-assets', label: 'My Assets', icon: Package },
+      { href: '/dashboard/[organizationId]/booking', label: 'Resource Booking', icon: BookOpen },
+      { href: '/dashboard/[organizationId]/notifications', label: 'Notifications', icon: Bell }
+    )
+  }
+
+  return items
+}
 
 const QUICK_NOTIFICATIONS = [
   { id: 'q1', message: 'Laptop AF-0014 assigned to Priya Shah', time: '2m ago', dotColor: 'bg-cyan-400', unread: true },
@@ -71,6 +105,10 @@ function Sidebar({
   const pathname = usePathname()
   const ref = useRef<HTMLDivElement>(null)
 
+  const { data: memberships } = useOrganizations()
+  const activeMembership = memberships?.find((m) => m.isActive)
+  const userRole = activeMembership?.role?.roleType ?? 'EMPLOYEE'
+
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (mobileOpen && ref.current && !ref.current.contains(e.target as Node)) {
@@ -84,9 +122,11 @@ function Sidebar({
   /* Close mobile on route change */
   useEffect(() => { onMobileClose() }, [pathname, onMobileClose])
 
+  const navItems = getNavItems(userRole)
+
   const menuItems = orgId
     ? [
-        ...ORG_NAV.map((item) => ({
+        ...navItems.map((item) => ({
           ...item,
           href: item.href.replace('[organizationId]', orgId),
         })),
@@ -246,8 +286,14 @@ function Topbar({
   const [notiOpen, setNotiOpen] = useState(false)
   const notiRef = useRef<HTMLDivElement>(null)
 
+  const { data: memberships } = useOrganizations()
+  const activeMembership = memberships?.find((m) => m.isActive)
+  const userRole = activeMembership?.role?.roleType ?? 'EMPLOYEE'
+
+  const navItems = getNavItems(userRole)
+
   const resolvedNAV = orgId
-    ? ORG_NAV.map((n) => ({ ...n, href: n.href.replace('[organizationId]', orgId) }))
+    ? navItems.map((n) => ({ ...n, href: n.href.replace('[organizationId]', orgId) }))
     : [{ href: '/dashboard', label: 'Dashboard (Orgs)' }]
 
   const activeItem = resolvedNAV.find((n) => {
@@ -420,12 +466,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Parse organizationId from pathname
   const segments = pathname.split('/').filter(Boolean)
-  const orgId = (segments[0] === 'dashboard' && segments[1] && segments[1] !== 'organizations')
+  const orgId = (segments[0] === 'dashboard' && segments[1] && segments[1] !== 'organizations' && segments[1] !== 'overview')
     ? segments[1]
     : null
 
-  // Fetch session using custom React Query hook
+  // Fetch session & memberships using React Query hooks
   const { data: sessionData, isLoading: isSessionLoading } = useSession()
+  const { data: memberships, isLoading: isOrgsLoading } = useOrganizations()
   const user = sessionData?.user
 
   // Handle automatic redirect if unauthenticated
@@ -434,6 +481,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push('/auth/login')
     }
   }, [user, isSessionLoading, router])
+
+  // Redirect to dashboard if trying to access overview directly or unauthorized organizationId
+  useEffect(() => {
+    if (pathname === '/dashboard/overview') {
+      router.push('/dashboard')
+      return
+    }
+    if (orgId && !isOrgsLoading && memberships) {
+      const hasAccess = memberships.some((m) => m.organization.id === orgId)
+      if (!hasAccess) {
+        router.push('/dashboard')
+      }
+    }
+  }, [orgId, isOrgsLoading, memberships, pathname, router])
 
   const sidebarW = collapsed ? 'lg:pl-[68px]' : 'lg:pl-[240px]'
   const closeMobile = useCallback(() => setMobileOpen(false), [])

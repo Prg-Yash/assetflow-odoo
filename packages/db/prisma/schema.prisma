@@ -775,6 +775,10 @@ model Invite {
   token          String       @unique
   expiresAt      DateTime
   accepted       Boolean      @default(false)
+  name           String?
+  designation    String?
+  departmentId   String?
+  phone          String?
   createdAt      DateTime     @default(now())
 
   @@index([organizationId])

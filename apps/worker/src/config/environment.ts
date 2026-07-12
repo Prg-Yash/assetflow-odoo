@@ -34,13 +34,30 @@ const environmentSchema = z.object({
   CONCURRENCY_AUDIT: z.coerce.number().int().positive().default(2),
   CONCURRENCY_BOOKING: z.coerce.number().int().positive().default(5),
 
-  // Notification integrations
+  // ==========================================
+  // Primary Email Provider: AWS SES Configurations
+  // ==========================================
+  SES_SMTP_HOST: z.string().optional(),
+  SES_SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SES_SMTP_USER: z.string().optional().or(z.literal("")),
+  SES_SMTP_PASS: z.string().optional().or(z.literal("")),
+  SMTP_FROM_EMAIL: z.string().email().default("noreply@assetflow.com"),
+
+  // Fallbacks for SES to support generic SMTP variables if SES_SMTP_* is empty
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().optional(),
   SMTP_USER: z.string().optional().or(z.literal("")),
   SMTP_PASS: z.string().optional().or(z.literal("")),
-  SMTP_FROM_EMAIL: z.string().email().default("noreply@assetflow.com"),
 
+  // ==========================================
+  // Fallback Email Provider: Gmail Configurations
+  // ==========================================
+  GMAIL_SMTP_USER: z.string().optional().or(z.literal("")),
+  GMAIL_SMTP_PASS: z.string().optional().or(z.literal("")),
+  GMAIL_SMTP_HOST: z.string().default("smtp.gmail.com"),
+  GMAIL_SMTP_PORT: z.coerce.number().int().positive().default(587),
+
+  // Other channels
   TWILIO_ACCOUNT_SID: z.string().optional().or(z.literal("")),
   TWILIO_AUTH_TOKEN: z.string().optional().or(z.literal("")),
   TWILIO_FROM_PHONE: z.string().optional().or(z.literal("")),
@@ -53,7 +70,17 @@ export type Environment = z.infer<typeof environmentSchema>;
 // Validate and parse the environment variables
 const parseEnvironment = (): Environment => {
   try {
-    return environmentSchema.parse(process.env);
+    const parsed = environmentSchema.parse(process.env);
+    
+    // Fallback SES SMTP parameters to generic SMTP parameters if not explicitly provided
+    if (!parsed.SES_SMTP_HOST && parsed.SMTP_HOST) {
+      parsed.SES_SMTP_HOST = parsed.SMTP_HOST;
+      parsed.SES_SMTP_PORT = parsed.SMTP_PORT;
+      parsed.SES_SMTP_USER = parsed.SMTP_USER;
+      parsed.SES_SMTP_PASS = parsed.SMTP_PASS;
+    }
+
+    return parsed;
   } catch (error) {
     if (error instanceof z.ZodError) {
       logger.fatal({ errors: error.format() }, "Environment variable validation failed!");
@@ -65,3 +92,4 @@ const parseEnvironment = (): Environment => {
 };
 
 export const env = parseEnvironment();
+export default env;

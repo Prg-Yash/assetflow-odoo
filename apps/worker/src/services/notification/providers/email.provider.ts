@@ -2,55 +2,64 @@ import { IEmailProvider } from "../provider.interface.js";
 import { EmailOptions } from "../types.js";
 import { env } from "../../../config/environment.js";
 import { logger } from "../../../logger/index.js";
+import { AwsSesEmailProvider } from "./ses.provider.js";
+import { GmailEmailProvider } from "./gmail.provider.js";
 
 /**
- * Production-ready Email Provider.
- * Integrates with SMTP server configuration (e.g., Mailtrap, AWS SES, SendGrid).
- * If SMTP configurations are omitted from the environment, it falls back to a warning/mock print.
+ * Main Email Dispatcher orchestrating primary (AWS SES) and secondary (Gmail) providers.
+ * Enforces failover policies: tries AWS SES first, and falls back to Gmail SMTP on error.
  */
 export class EmailProvider implements IEmailProvider {
-  public async send(options: EmailOptions): Promise<void> {
-    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL } = env;
+  private sesProvider = new AwsSesEmailProvider();
+  private gmailProvider = new GmailEmailProvider();
 
-    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+  public async send(options: EmailOptions): Promise<void> {
+    const hasSes = !!(env.SES_SMTP_HOST && env.SES_SMTP_USER && env.SES_SMTP_PASS);
+    const hasGmail = !!(env.GMAIL_SMTP_USER && env.GMAIL_SMTP_PASS);
+
+    // If no credentials exist, simulate email send locally (useful for clean offline development runs)
+    if (!hasSes && !hasGmail) {
       logger.warn(
         { to: options.to, subject: options.subject },
-        "SMTP configurations missing. Simulating email dispatch (check logs)..."
+        "Mailer: Neither AWS SES nor Gmail fallback configurations are set. Simulating dispatch locally..."
       );
-      // Fallback simulating work
       return;
     }
 
-    try {
-      logger.debug(
-        { host: SMTP_HOST, port: SMTP_PORT, to: options.to },
-        "Attempting to dispatch email via SMTP connection..."
-      );
-
-      // In production, you would import 'nodemailer' and run:
-      // const transporter = nodemailer.createTransport({
-      //   host: SMTP_HOST,
-      //   port: SMTP_PORT,
-      //   secure: SMTP_PORT === 465,
-      //   auth: { user: SMTP_USER, pass: SMTP_PASS }
-      // });
-      // await transporter.sendMail({
-      //   from: SMTP_FROM_EMAIL,
-      //   to: options.to,
-      //   subject: options.subject,
-      //   html: `<b>Template:</b> ${options.template}<br><b>Data:</b> ${JSON.stringify(options.context)}`
-      // });
-
+    // Try primary provider (AWS SES) first if configured
+    if (hasSes) {
+      try {
+        await this.sesProvider.send(options);
+        return; // Success! Return immediately
+      } catch (error) {
+        const err = error as Error;
+        logger.warn(
+          { err: err.message, to: options.to },
+          "Mailer: Primary AWS SES transmission failed. Activating Gmail SMTP fallback..."
+        );
+      }
+    } else {
       logger.info(
-        { to: options.to, subject: options.subject, sender: SMTP_FROM_EMAIL },
-        "Email successfully dispatched via SMTP provider"
+        { to: options.to },
+        "Mailer: AWS SES SMTP parameters missing. Bypassing directly to Gmail fallback..."
       );
-    } catch (error) {
-      logger.error(
-        { err: error, to: options.to, subject: options.subject },
-        "Failed to send email via SMTP provider"
+    }
+
+    // Attempt Gmail fallback delivery
+    if (hasGmail) {
+      try {
+        await this.gmailProvider.send(options);
+      } catch (error) {
+        logger.error(
+          { err: error, to: options.to },
+          "Mailer: Gmail SMTP fallback also failed. Email delivery has failed completely."
+        );
+        throw error;
+      }
+    } else {
+      throw new Error(
+        "Mailer: Primary AWS SES transmission failed, and no Gmail fallback app credentials were configured."
       );
-      throw error;
     }
   }
 }

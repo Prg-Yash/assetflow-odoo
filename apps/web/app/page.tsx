@@ -1,6 +1,7 @@
-import { ArrowRight, Package, Users, BookOpen, Zap, BarChart3, CheckCircle, ArrowDown } from 'lucide-react'
+import { ArrowRight, Package, Users, BookOpen, Zap, BarChart3, CheckCircle, ArrowDown, Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { PhoneFlowDemo } from './components/phone-flow-demo'
+import { LandingNav } from './components/landing-nav'
 
 export const metadata = {
   title: 'AssetFlow — Enterprise Asset Management',
@@ -10,24 +11,10 @@ export const metadata = {
 export default function Page() {
   return (
     <main className="min-h-screen bg-background text-foreground">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-8">
-          <div className="text-2xl font-light tracking-tight">Asset<span className="font-semibold">Flow</span></div>
-          <div className="hidden md:flex gap-8 items-center">
-            <Link href="#" className="text-sm font-light hover:text-accent transition-colors duration-300">Features</Link>
-            <Link href="#" className="text-sm font-light hover:text-accent transition-colors duration-300">How it works</Link>
-            <Link href="#" className="text-sm font-light hover:text-accent transition-colors duration-300">Pricing</Link>
-            <Link href="#" className="text-sm font-light hover:text-accent transition-colors duration-300">Contact</Link>
-            <button className="px-6 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:scale-105 transition-transform duration-300">
-              Get Started
-            </button>
-          </div>
-        </div>
-      </nav>
+      <LandingNav />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-background to-secondary/5">
+      <section id="hero" className="relative overflow-hidden bg-gradient-to-b from-background to-secondary/5">
         <div className="mx-auto max-w-7xl px-6 py-32 sm:px-8 sm:py-40">
           <div className="space-y-12 text-center">
             <div className="space-y-6">
@@ -42,19 +29,25 @@ export default function Page() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <Link
+                href="/auth/register"
+                className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-300"
+              >
                 Start Free Trial <ArrowRight className="w-4 h-4" />
-              </button>
-              <button className="px-8 py-3 border-2 border-primary hover:bg-primary/5 text-foreground rounded-lg font-semibold transition-colors duration-300">
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="px-8 py-3 border-2 border-primary hover:bg-primary/5 text-foreground rounded-lg font-semibold transition-colors duration-300 text-center"
+              >
                 View Demo
-              </button>
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="border-t border-border py-20 sm:py-28">
+      <section id="features" className="border-t border-border py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <div className="space-y-16">
             <div className="space-y-4 text-center">
@@ -114,7 +107,7 @@ export default function Page() {
       </section>
 
       {/* How It Works */}
-      <section className="border-t border-border h  overflow-hidden">
+      <section id="how-it-works" className="border-t border-border h  overflow-hidden">
         <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-12 md:py-20">
           <div className="mb-8 md:mb-10 flex flex-col gap-2">
             <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight">How It Works</h2>
@@ -163,7 +156,7 @@ export default function Page() {
       </section>
 
       {/* Benefits */}
-      <section className="border-t border-border py-20 sm:py-28">
+      <section id="benefits" className="border-t border-border py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <div className="space-y-16">
             <div className="space-y-4 text-center">
@@ -210,12 +203,18 @@ export default function Page() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <Link
+                href="/auth/register"
+                className="px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-300"
+              >
                 Start Free Trial <ArrowRight className="w-4 h-4" />
-              </button>
-              <button className="px-8 py-3 border-2 border-primary text-foreground rounded-lg font-semibold hover:bg-primary/5 transition-colors duration-300">
+              </Link>
+              <Link
+                href="/auth/login"
+                className="px-8 py-3 border-2 border-primary text-foreground rounded-lg font-semibold hover:bg-primary/5 transition-colors duration-300 text-center"
+              >
                 Schedule Demo
-              </button>
+              </Link>
             </div>
           </div>
         </div>

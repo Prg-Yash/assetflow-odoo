@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus,
@@ -22,6 +23,12 @@ import {
   LayoutGrid,
   List,
 } from 'lucide-react'
+import {
+  useOrganizations,
+  useCreateOrganization,
+  useSwitchOrganization,
+  useUpdateOrganization,
+} from '@/hooks/use-organizations'
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -43,58 +50,10 @@ interface Organization {
 
 type ViewMode = 'grid' | 'list'
 
-/* ─── Seed data ────────────────────────────────────────────────────────────── */
-
-const SEED_ORGANIZATIONS: Organization[] = [
-  {
-    id: 'o1',
-    name: 'Acme Corp',
-    slug: 'acme-corp',
-    website: 'https://acme.com',
-    phone: '+1 555-0100',
-    role: 'Admin',
-    members: 48,
-    assets: 312,
-    departments: 6,
-    status: 'Active',
-    isCurrent: true,
-  },
-  {
-    id: 'o2',
-    name: 'Nova Logistics',
-    slug: 'nova-logistics',
-    website: 'https://novalogistics.io',
-    phone: '+1 555-0200',
-    role: 'Admin',
-    members: 22,
-    assets: 156,
-    departments: 4,
-    status: 'Active',
-    isCurrent: false,
-  },
-  {
-    id: 'o3',
-    name: 'Brightfield Labs',
-    slug: 'brightfield-labs',
-    website: 'https://brightfieldlabs.com',
-    phone: '+1 555-0300',
-    role: 'Asset Manager',
-    members: 12,
-    assets: 89,
-    departments: 3,
-    status: 'Inactive',
-    isCurrent: false,
-  },
-]
-
 const STORAGE_KEY = 'assetflow:activeOrgId'
 const STORAGE_NAME_KEY = 'assetflow:activeOrgName'
 
 /* ─── Utilities ────────────────────────────────────────────────────────────── */
-
-function uid() {
-  return Math.random().toString(36).slice(2, 9)
-}
 
 function slugify(name: string) {
   return (
@@ -253,6 +212,51 @@ const emptyForm = {
   status: 'Active' as Status,
 }
 
+/* ─── Skeleton Loading Placeholders ────────────────────────────────────────── */
+
+function SkeletonStats() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3.5 animate-pulse">
+          <div className="h-3 w-24 bg-white/10 rounded mb-2" />
+          <div className="h-6 w-16 bg-white/10 rounded" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SkeletonCard() {
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-5 animate-pulse space-y-4">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-xl bg-white/10 shrink-0" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="h-4 bg-white/10 rounded w-3/4" />
+          <div className="h-3 bg-white/10 rounded w-1/2" />
+          <div className="h-3 bg-white/10 rounded w-1/3" />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/6">
+        <div className="space-y-1.5 flex flex-col items-center">
+          <div className="h-3 w-8 bg-white/10 rounded" />
+          <div className="h-2 w-12 bg-white/10 rounded" />
+        </div>
+        <div className="space-y-1.5 flex flex-col items-center">
+          <div className="h-3 w-8 bg-white/10 rounded" />
+          <div className="h-2 w-12 bg-white/10 rounded" />
+        </div>
+        <div className="space-y-1.5 flex flex-col items-center">
+          <div className="h-3 w-8 bg-white/10 rounded" />
+          <div className="h-2 w-12 bg-white/10 rounded" />
+        </div>
+      </div>
+      <div className="h-9 bg-white/10 rounded w-full mt-2" />
+    </div>
+  )
+}
+
 /* ─── Org card ─────────────────────────────────────────────────────────────── */
 
 function OrgCard({
@@ -260,13 +264,11 @@ function OrgCard({
   onEdit,
   onDelete,
   onSwitch,
-  onToggleStatus,
 }: {
   org: Organization
   onEdit: (org: Organization) => void
   onDelete: (id: string) => void
   onSwitch: (id: string) => void
-  onToggleStatus: (id: string) => void
 }) {
   return (
     <div
@@ -279,7 +281,7 @@ function OrgCard({
     >
       {org.isCurrent && (
         <span className="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/20 text-accent text-[10px] font-bold uppercase tracking-wider">
-          <Star className="w-3 h-3 fill-current" />
+          <Star className="w-3.5 h-3.5 fill-current" />
           Active
         </span>
       )}
@@ -337,9 +339,9 @@ function OrgCard({
       )}
 
       <div className="flex items-center justify-between mt-5">
-        <button onClick={() => onToggleStatus(org.id)} className="hover:opacity-80 transition-opacity">
+        <div>
           <StatusBadge status={org.status} />
-        </button>
+        </div>
         <div className="flex items-center gap-1">
           {!org.isCurrent && (
             <button
@@ -366,14 +368,16 @@ function OrgCard({
       </div>
 
       <Link
-        href="/dashboard/setup"
-        onClick={() => {
-          if (!org.isCurrent) onSwitch(org.id)
+        href={`/dashboard/${org.id}`}
+        onClick={async () => {
+          if (!org.isCurrent) {
+            await onSwitch(org.id)
+          }
         }}
         className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 py-2 text-xs font-semibold text-white/70 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all"
       >
         <Settings className="w-3.5 h-3.5" />
-        Organisation Setup
+        Manage Organization
       </Link>
     </div>
   )
@@ -382,7 +386,7 @@ function OrgCard({
 /* ─── PAGE ─────────────────────────────────────────────────────────────────── */
 
 export default function DashboardOrganizationsPage() {
-  const [orgs, setOrgs] = useState<Organization[]>(SEED_ORGANIZATIONS)
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [showAdd, setShowAdd] = useState(false)
@@ -392,6 +396,12 @@ export default function DashboardOrganizationsPage() {
   const [editForm, setEditForm] = useState(emptyForm)
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' })
 
+  // Backend Integration Queries and Mutations
+  const { data: memberships, isLoading, error } = useOrganizations()
+  const createMutation = useCreateOrganization()
+  const switchMutation = useSwitchOrganization()
+  const updateMutation = useUpdateOrganization()
+
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type })
   }, [])
@@ -400,25 +410,35 @@ export default function DashboardOrganizationsPage() {
     setToast((p) => ({ ...p, show: false }))
   }, [])
 
+  // Auto-sync active organization context
   useEffect(() => {
-    const storedId = sessionStorage.getItem(STORAGE_KEY)
-    if (storedId) {
-      setOrgs((prev) =>
-        prev.map((o) => ({
-          ...o,
-          isCurrent: o.id === storedId,
-        }))
-      )
-    } else if (orgs.length > 0) {
-      const defaultOrg = orgs.find((o) => o.isCurrent) ?? orgs[0]
-      if (defaultOrg) persistActiveOrg(defaultOrg.id, defaultOrg.name)
+    if (memberships && memberships.length > 0) {
+      const activeMember = memberships.find((m) => m.isActive)
+      const defaultMember = activeMember ?? memberships[0]
+      if (defaultMember && typeof window !== 'undefined') {
+        const storedId = sessionStorage.getItem(STORAGE_KEY)
+        if (!storedId || storedId !== defaultMember.organization.id) {
+          sessionStorage.setItem(STORAGE_KEY, defaultMember.organization.id)
+          sessionStorage.setItem(STORAGE_NAME_KEY, defaultMember.organization.name)
+        }
+      }
     }
-  }, [])
+  }, [memberships])
 
-  const persistActiveOrg = (id: string, name: string) => {
-    sessionStorage.setItem(STORAGE_KEY, id)
-    sessionStorage.setItem(STORAGE_NAME_KEY, name)
-  }
+  // Map memberships to legacy Organization interface for seamless rendering compatibility
+  const orgs: Organization[] = (memberships ?? []).map((m) => ({
+    id: m.organization.id,
+    name: m.organization.name,
+    slug: m.organization.slug,
+    website: m.organization.website ?? '',
+    phone: m.organization.phone ?? '',
+    role: m.role.name,
+    members: m.organization._count?.users ?? 0,
+    assets: m.organization._count?.assets ?? 0,
+    departments: m.organization._count?.departments ?? 0,
+    status: m.organization.isActive ? 'Active' : 'Inactive',
+    isCurrent: m.isActive,
+  }))
 
   const filtered = orgs.filter(
     (o) =>
@@ -431,44 +451,40 @@ export default function DashboardOrganizationsPage() {
   const totalMembers = orgs.reduce((sum, o) => sum + o.members, 0)
   const totalAssets = orgs.reduce((sum, o) => sum + o.assets, 0)
 
-  const handleSwitch = (id: string) => {
-    const org = orgs.find((o) => o.id === id)
-    setOrgs((prev) =>
-      prev.map((o) => ({
-        ...o,
-        isCurrent: o.id === id,
-      }))
-    )
-    if (org) persistActiveOrg(id, org.name)
-    showToast(`Switched to ${org?.name ?? 'organisation'}`)
+  const handleSwitch = async (id: string) => {
+    try {
+      const targetOrg = orgs.find((o) => o.id === id)
+      await switchMutation.mutateAsync(id)
+      showToast(`Switched active workspace to ${targetOrg?.name ?? 'organisation'}`)
+      router.push(`/dashboard/${id}`)
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to switch workspace', 'error')
+    }
   }
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) return
 
-    const newOrg: Organization = {
-      id: uid(),
-      name: form.name.trim(),
-      slug: slugify(form.name),
-      website: form.website.trim(),
-      phone: form.phone.trim(),
-      role: form.role,
-      members: 1,
-      assets: 0,
-      departments: 0,
-      status: form.status,
-      isCurrent: orgs.length === 0,
-    }
+    try {
+      const newOrg = await createMutation.mutateAsync({
+        name: form.name.trim(),
+        slug: slugify(form.name),
+        website: form.website.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        makeActive: true,
+      })
 
-    setOrgs((prev) => {
-      const next = [...prev, newOrg]
-      if (newOrg.isCurrent) persistActiveOrg(newOrg.id, newOrg.name)
-      return next
-    })
-    setForm(emptyForm)
-    setShowAdd(false)
-    showToast('Organisation created successfully')
+      setForm(emptyForm)
+      setShowAdd(false)
+      showToast('Organisation created successfully')
+
+      if (newOrg) {
+        router.push(`/dashboard/${newOrg.id}`)
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to create organisation', 'error')
+    }
   }
 
   const handleEditClick = (org: Organization) => {
@@ -482,29 +498,26 @@ export default function DashboardOrganizationsPage() {
     })
   }
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingOrg || !editForm.name.trim()) return
 
-    setOrgs((prev) =>
-      prev.map((o) =>
-        o.id === editingOrg.id
-          ? {
-              ...o,
-              name: editForm.name.trim(),
-              website: editForm.website.trim(),
-              phone: editForm.phone.trim(),
-              role: editForm.role,
-              status: editForm.status,
-            }
-          : o
-      )
-    )
-    if (editingOrg.isCurrent) {
-      sessionStorage.setItem(STORAGE_NAME_KEY, editForm.name.trim())
+    try {
+      if (!editingOrg.isCurrent) {
+        await switchMutation.mutateAsync(editingOrg.id)
+      }
+
+      await updateMutation.mutateAsync({
+        name: editForm.name.trim(),
+        website: editForm.website.trim() || undefined,
+        phone: editForm.phone.trim() || undefined,
+      })
+
+      setEditingOrg(null)
+      showToast('Organisation updated successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to update organisation settings', 'error')
     }
-    setEditingOrg(null)
-    showToast('Organisation updated successfully')
   }
 
   const handleDelete = (id: string) => {
@@ -517,19 +530,9 @@ export default function DashboardOrganizationsPage() {
   }
 
   const confirmDelete = () => {
-    if (!deletingId) return
-    const org = orgs.find((o) => o.id === deletingId)
-    setOrgs((prev) => prev.filter((o) => o.id !== deletingId))
+    // Delete action placeholder since the backend organizations.route has no delete endpoint
     setDeletingId(null)
-    showToast(`${org?.name ?? 'Organisation'} removed`, 'error')
-  }
-
-  const toggleStatus = (id: string) => {
-    setOrgs((prev) =>
-      prev.map((o) =>
-        o.id === id ? { ...o, status: o.status === 'Active' ? 'Inactive' : 'Active' } : o
-      )
-    )
+    showToast('Organization deletion is disabled. Please contact support.', 'error')
   }
 
   const OrgForm = ({
@@ -538,18 +541,21 @@ export default function DashboardOrganizationsPage() {
     onSubmit,
     onCancel,
     submitLabel,
+    isSubmitting,
   }: {
     data: typeof emptyForm
     onChange: (fn: (p: typeof emptyForm) => typeof emptyForm) => void
     onSubmit: (e: React.FormEvent) => void
     onCancel: () => void
     submitLabel: string
+    isSubmitting: boolean
   }) => (
     <form onSubmit={onSubmit} className="space-y-4">
       <Field label="Organisation Name">
         <input
           type="text"
           required
+          disabled={isSubmitting}
           placeholder="e.g. Acme Corp"
           value={data.name}
           onChange={(e) => onChange((p) => ({ ...p, name: e.target.value }))}
@@ -559,6 +565,7 @@ export default function DashboardOrganizationsPage() {
       <Field label="Website (optional)">
         <input
           type="url"
+          disabled={isSubmitting}
           placeholder="https://example.com"
           value={data.website}
           onChange={(e) => onChange((p) => ({ ...p, website: e.target.value }))}
@@ -568,52 +575,28 @@ export default function DashboardOrganizationsPage() {
       <Field label="Phone (optional)">
         <input
           type="tel"
+          disabled={isSubmitting}
           placeholder="+1 555-0100"
           value={data.phone}
           onChange={(e) => onChange((p) => ({ ...p, phone: e.target.value }))}
           className={inputCls}
         />
       </Field>
-      <Field label="Your Role">
-        <div className="relative">
-          <select
-            value={data.role}
-            onChange={(e) => onChange((p) => ({ ...p, role: e.target.value }))}
-            className={selectCls}
-          >
-            <option value="Admin">Admin</option>
-            <option value="Asset Manager">Asset Manager</option>
-            <option value="Auditor">Auditor</option>
-            <option value="Employee">Employee</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
-        </div>
-      </Field>
-      <Field label="Status">
-        <div className="relative">
-          <select
-            value={data.status}
-            onChange={(e) => onChange((p) => ({ ...p, status: e.target.value as Status }))}
-            className={selectCls}
-          >
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
-        </div>
-      </Field>
       <div className="flex gap-3 pt-2">
         <button
           type="button"
+          disabled={isSubmitting}
           onClick={onCancel}
-          className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors"
+          className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+          disabled={isSubmitting}
+          className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
         >
+          {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />}
           {submitLabel}
         </button>
       </div>
@@ -625,7 +608,7 @@ export default function DashboardOrganizationsPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Organisations</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight animate-fade-in">Organisations</h2>
           <p className="text-sm text-white/40">
             Manage the workspaces you belong to. Select an organisation before configuring setup.
           </p>
@@ -640,27 +623,31 @@ export default function DashboardOrganizationsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Total Organisations', value: orgs.length, icon: Building2 },
-          { label: 'Active Workspace', value: activeOrg?.name ?? '—', icon: Star, truncate: true },
-          { label: 'Total Members', value: totalMembers, icon: Users },
-          { label: 'Total Assets', value: totalAssets, icon: Package },
-        ].map(({ label, value, icon: Icon, truncate }) => (
-          <div
-            key={label}
-            className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3.5"
-          >
-            <div className="flex items-center gap-2 text-white/30 mb-1.5">
-              <Icon className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
+      {isLoading ? (
+        <SkeletonStats />
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Total Organisations', value: orgs.length, icon: Building2 },
+            { label: 'Active Workspace', value: activeOrg?.name ?? '—', icon: Star, truncate: true },
+            { label: 'Total Members', value: totalMembers, icon: Users },
+            { label: 'Total Assets', value: totalAssets, icon: Package },
+          ].map(({ label, value, icon: Icon, truncate }) => (
+            <div
+              key={label}
+              className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3.5"
+            >
+              <div className="flex items-center gap-2 text-white/30 mb-1.5">
+                <Icon className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
+              </div>
+              <p className={['text-lg font-bold text-white', truncate ? 'truncate' : ''].join(' ')}>
+                {value}
+              </p>
             </div>
-            <p className={['text-lg font-bold text-white', truncate ? 'truncate' : ''].join(' ')}>
-              {value}
-            </p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -690,15 +677,33 @@ export default function DashboardOrganizationsPage() {
       </div>
 
       {/* Content */}
-      {filtered.length === 0 ? (
-        <div className="rounded-xl border border-white/8 py-16 text-center">
-          <Building2 className="w-10 h-10 text-white/15 mx-auto mb-3" />
-          <p className="text-sm text-white/40">No organisations found.</p>
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="rounded-xl border border-red-500/25 bg-red-950/20 py-10 text-center max-w-md mx-auto space-y-3">
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
+          <h4 className="text-sm font-semibold text-white">Error Loading Workspaces</h4>
+          <p className="text-xs text-white/50">{error instanceof Error ? error.message : 'Unknown network issue'}</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-white/8 bg-white/[0.01] py-16 px-6 text-center max-w-xl mx-auto space-y-6">
+          <Building2 className="w-12 h-12 text-white/15 mx-auto mb-2" />
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-white">No Workspaces Found</h3>
+            <p className="text-xs text-white/40 leading-relaxed">
+              You are not a member of any organization yet. Create a workspace or contact your administrator for an invite.
+            </p>
+          </div>
           <button
             onClick={() => setShowAdd(true)}
-            className="mt-4 text-sm font-semibold text-accent hover:text-accent/80 transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 transition"
           >
-            Create your first organisation
+            <Plus className="w-4 h-4" />
+            Create Workspace
           </button>
         </div>
       ) : viewMode === 'grid' ? (
@@ -710,7 +715,6 @@ export default function DashboardOrganizationsPage() {
               onEdit={handleEditClick}
               onDelete={handleDelete}
               onSwitch={handleSwitch}
-              onToggleStatus={toggleStatus}
             />
           ))}
         </div>
@@ -765,12 +769,7 @@ export default function DashboardOrganizationsPage() {
                     <td className="px-5 py-4 text-white/70">{org.members}</td>
                     <td className="px-5 py-4 text-white/70">{org.assets}</td>
                     <td className="px-5 py-4">
-                      <button
-                        onClick={() => toggleStatus(org.id)}
-                        className="hover:opacity-80 transition-opacity"
-                      >
-                        <StatusBadge status={org.status} />
-                      </button>
+                      <StatusBadge status={org.status} />
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-1">
@@ -783,12 +782,14 @@ export default function DashboardOrganizationsPage() {
                           </button>
                         )}
                         <Link
-                          href="/dashboard/setup"
-                          onClick={() => {
-                            if (!org.isCurrent) handleSwitch(org.id)
+                          href={`/dashboard/${org.id}`}
+                          onClick={async () => {
+                            if (!org.isCurrent) {
+                              await handleSwitch(org.id)
+                            }
                           }}
                           className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
-                          title="Organisation Setup"
+                          title="Manage Organisation"
                         >
                           <Settings className="w-3.5 h-3.5" />
                         </Link>
@@ -816,7 +817,7 @@ export default function DashboardOrganizationsPage() {
       )}
 
       <p className="text-xs text-white/25 italic">
-        Switch your active organisation here, then proceed to Organisation Setup to configure
+        Switch your active organisation here, then manage organization to configure
         departments, categories, and employees.
       </p>
 
@@ -829,6 +830,7 @@ export default function DashboardOrganizationsPage() {
             onSubmit={handleAdd}
             onCancel={() => setShowAdd(false)}
             submitLabel="Create Organisation"
+            isSubmitting={createMutation.isPending}
           />
         </Modal>
       )}
@@ -842,6 +844,7 @@ export default function DashboardOrganizationsPage() {
             onSubmit={handleEditSubmit}
             onCancel={() => setEditingOrg(null)}
             submitLabel="Save Changes"
+            isSubmitting={updateMutation.isPending}
           />
         </Modal>
       )}

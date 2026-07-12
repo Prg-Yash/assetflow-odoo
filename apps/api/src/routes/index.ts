@@ -19,6 +19,7 @@ import maintenanceRouter from "./maintenance.route.js";
 import auditsRouter from "./audits.route.js";
 import dashboardRouter from "./dashboard.route.js";
 import notificationsRouter, { activityLogsRouter } from "./notifications.route.js";
+import approvalsRouter from "./approvals.route.js";
 
 const router = Router();
 
@@ -52,6 +53,7 @@ router.use("/transfers", transfersRouter);
 router.use("/bookings", bookingsRouter);
 router.use("/maintenance", maintenanceRouter);
 router.use("/audits", auditsRouter);
+router.use("/approval-requests", approvalsRouter);
 
 // Dashboard, Reports & Audit Trails
 router.use("/dashboard", dashboardRouter);

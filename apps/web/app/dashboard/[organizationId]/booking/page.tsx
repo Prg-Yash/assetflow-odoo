@@ -169,12 +169,12 @@ function Modal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-white/10 bg-[hsl(240_10%_9%)] shadow-2xl shadow-black/80 overflow-hidden animate-in zoom-in-95 fade-in duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
-          <h3 className="text-base font-semibold text-white">{title}</h3>
+      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl shadow-black/80 overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-white/45 hover:text-white hover:bg-white/8 transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-foreground/45 hover:text-foreground hover:bg-muted transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -188,7 +188,7 @@ function Modal({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-white/60 uppercase tracking-wide">
+      <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide">
         {label}
       </label>
       {children}
@@ -197,15 +197,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputCls =
-  'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition'
+  'w-full rounded-lg border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition'
 const selectCls =
-  'w-full rounded-lg border border-white/10 bg-[hsl(240_10%_12%)] px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none cursor-pointer'
+  'w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none cursor-pointer'
 
 function StatusBadge({ status }: { status: BookingStatus }) {
   const s: Record<BookingStatus, string> = {
     Confirmed: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
     Pending: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
-    Cancelled: 'text-white/40 border-white/10 bg-white/5 line-through',
+    Cancelled: 'text-muted-foreground border-border bg-muted line-through',
   }
   return (
     <span
@@ -363,8 +363,8 @@ export default function ResourceBookingPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Resource Booking</h2>
-          <p className="text-sm text-white/40">
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">Resource Booking</h2>
+          <p className="text-sm text-muted-foreground">
             Book meeting rooms, shared equipment, workspaces and vehicles.
           </p>
         </div>
@@ -375,11 +375,11 @@ export default function ResourceBookingPage() {
         
         {/* Timeline View Column (Matches Screen 6 Mockup) */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 md:p-8 shadow-xl">
+          <div className="rounded-2xl border border-border bg-card p-6 md:p-8 shadow-xl">
             
             {/* Mockup Top Input (Resource Selection) */}
             <div className="space-y-2 mb-8">
-              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider">
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Resource
               </label>
               <div className="relative">
@@ -389,15 +389,15 @@ export default function ResourceBookingPage() {
                     setSelectedResourceId(e.target.value)
                     setForm((prev) => ({ ...prev, resourceId: e.target.value }))
                   }}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition appearance-none cursor-pointer"
+                  className="w-full rounded-lg border border-border bg-input hover:bg-muted px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition appearance-none cursor-pointer"
                 >
                   {RESOURCES.map((r) => (
-                    <option key={r.id} value={r.id} className="bg-[hsl(240_10%_9%)]">
+                    <option key={r.id} value={r.id} className="bg-card">
                       {r.name} — {r.location}
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               </div>
             </div>
 
@@ -411,15 +411,15 @@ export default function ResourceBookingPage() {
                   setSelectedDate(e.target.value)
                   setForm((prev) => ({ ...prev, date: e.target.value }))
                 }}
-                className="bg-transparent text-sm text-white/80 focus:outline-none font-medium"
+                className="bg-transparent text-sm text-foreground/80 focus:outline-none font-medium"
               />
-              <span className="text-xs text-white/30">
+              <span className="text-xs text-muted-foreground/80">
                 ({getFriendlyDate(selectedDate)})
               </span>
             </div>
 
             {/* Scheduler Grid Container */}
-            <div className="relative border-l border-white/10 ml-12 min-h-[440px] select-none">
+            <div className="relative border-l border-border ml-12 min-h-[440px] select-none">
               
               {/* Hour Lines */}
               {TIMELINE_HOURS.map((hour, idx) => {
@@ -430,12 +430,12 @@ export default function ResourceBookingPage() {
                 return (
                   <div key={hour} className="relative h-[80px]" style={{ contentVisibility: 'auto' }}>
                     {/* Hour Label */}
-                    <span className="absolute -left-12 top-0 -translate-y-1/2 text-xs font-semibold text-white/40 tabular-nums">
+                    <span className="absolute -left-12 top-0 -translate-y-1/2 text-xs font-semibold text-muted-foreground tabular-nums">
                       {formatTime}
                     </span>
                     {/* Horizontal grid line */}
                     {idx < TIMELINE_HOURS.length - 1 && (
-                      <div className="absolute inset-x-0 top-0 border-t border-white/5" />
+                      <div className="absolute inset-x-0 top-0 border-t border-border" />
                     )}
                   </div>
                 )
@@ -487,14 +487,14 @@ export default function ResourceBookingPage() {
               })}
 
               {dayBookings.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center text-xs text-white/30 italic">
+                <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground/80 italic">
                   No bookings scheduled for this day
                 </div>
               )}
             </div>
 
             {/* Bottom Button (Matches "Book a slot" button in sketch) */}
-            <div className="mt-8 pt-6 border-t border-white/8 flex justify-start">
+            <div className="mt-8 pt-6 border-t border-border flex justify-start">
               <button
                 onClick={() => {
                   setForm((prev) => ({
@@ -504,7 +504,7 @@ export default function ResourceBookingPage() {
                   }))
                   setShowCreate(true)
                 }}
-                className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-6 py-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-950/20 active:scale-[0.98]"
+                className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-6 py-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500 hover:text-foreground transition-all shadow-lg shadow-emerald-950/20 active:scale-[0.98]"
               >
                 Book a slot
               </button>
@@ -517,16 +517,16 @@ export default function ResourceBookingPage() {
         <div className="space-y-6">
           
           {/* Quick info panel */}
-          <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-white">Active Resource</h3>
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Active Resource</h3>
             {currentResource && (
               <div className="space-y-3">
-                <div className="p-4 rounded-xl bg-white/5 border border-white/8 space-y-2">
+                <div className="p-4 rounded-xl bg-card border border-border space-y-2">
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-accent" />
-                    <span className="font-semibold text-sm text-white">{currentResource.name}</span>
+                    <span className="font-semibold text-sm text-foreground">{currentResource.name}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-white/40">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <MapPin className="w-3.5 h-3.5" />
                     {currentResource.location}
                   </div>
@@ -535,7 +535,7 @@ export default function ResourceBookingPage() {
                   </div>
                 </div>
                 
-                <p className="text-xs text-white/50 leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   Conflicts automatically highlight in red with a dashed border. Administrators can resolve conflicts by updating or cancelling bookings.
                 </p>
               </div>
@@ -543,8 +543,8 @@ export default function ResourceBookingPage() {
           </div>
 
           {/* Quick switch sidebar list */}
-          <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-white">Quick Switch</h3>
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Quick Switch</h3>
             <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
               {RESOURCES.map((r) => {
                 const active = r.id === selectedResourceId
@@ -556,7 +556,7 @@ export default function ResourceBookingPage() {
                       'w-full text-left p-3 rounded-xl border transition-all text-xs flex justify-between items-center',
                       active
                         ? 'border-accent bg-accent/10 text-accent'
-                        : 'border-white/5 bg-white/[0.02] text-white/60 hover:bg-white/[0.05] hover:text-white',
+                        : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
                     ].join(' ')}
                   >
                     <div>
@@ -576,69 +576,69 @@ export default function ResourceBookingPage() {
       {/* Bookings Table list */}
       <div className="space-y-4 pt-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h3 className="text-lg font-semibold text-white">All Bookings</h3>
+          <h3 className="text-lg font-semibold text-foreground">All Bookings</h3>
           <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search bookings…"
-              className="w-full rounded-lg border border-white/10 bg-white/5 pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
+              className="w-full rounded-lg border border-border bg-input pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
             />
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/8 overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8 bg-white/3">
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Resource
                   </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Booked By
                   </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Time
                   </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Purpose
                   </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-border">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-14 text-center text-sm text-white/30">
+                    <td colSpan={7} className="px-5 py-14 text-center text-sm text-muted-foreground/80">
                       No bookings found.
                     </td>
                   </tr>
                 ) : (
                   paginated.map((b) => (
-                    <tr key={b.id} className="hover:bg-white/2 transition-colors group">
-                      <td className="px-5 py-4 font-medium text-white">{b.resourceName}</td>
-                      <td className="px-5 py-4 text-white/60">{b.bookedBy}</td>
-                      <td className="px-5 py-4 text-white/50 tabular-nums text-xs">
+                    <tr key={b.id} className="hover:bg-muted transition-colors group">
+                      <td className="px-5 py-4 font-medium text-foreground">{b.resourceName}</td>
+                      <td className="px-5 py-4 text-muted-foreground">{b.bookedBy}</td>
+                      <td className="px-5 py-4 text-muted-foreground tabular-nums text-xs">
                         {b.date}
                       </td>
-                      <td className="px-5 py-4 text-white/50 tabular-nums text-xs">
+                      <td className="px-5 py-4 text-muted-foreground tabular-nums text-xs">
                         <span className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
                           {b.startTime} – {b.endTime}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-white/50 max-w-[200px] truncate">{b.purpose}</td>
+                      <td className="px-5 py-4 text-muted-foreground max-w-[200px] truncate">{b.purpose}</td>
                       <td className="px-5 py-4">
                         <StatusBadge status={b.status} />
                       </td>
@@ -647,7 +647,7 @@ export default function ResourceBookingPage() {
                           <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => handleCancel(b.id)}
-                              className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -662,8 +662,8 @@ export default function ResourceBookingPage() {
           </div>
 
           {/* Footer row count with pagination */}
-          <div className="border-t border-white/5 px-5 py-3.5 flex flex-col sm:flex-row justify-between items-center bg-white/2 gap-3">
-            <p className="text-xs text-white/30 text-center sm:text-left">
+          <div className="border-t border-border px-5 py-3.5 flex flex-col sm:flex-row justify-between items-center bg-muted gap-3">
+            <p className="text-xs text-muted-foreground/80 text-center sm:text-left">
               Showing {filtered.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(filtered.length, currentPage * ITEMS_PER_PAGE)} of {filtered.length} bookings
             </p>
             {totalPages > 1 && (
@@ -672,18 +672,18 @@ export default function ResourceBookingPage() {
                   type="button"
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="px-3 py-1.5 rounded-lg border border-white/10 text-xs font-semibold text-white/70 hover:bg-white/5 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground/70 hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-colors"
                 >
                   Previous
                 </button>
-                <span className="text-xs text-white/40 px-1">
+                <span className="text-xs text-muted-foreground px-1">
                   Page {currentPage} of {totalPages}
                 </span>
                 <button
                   type="button"
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className="px-3 py-1.5 rounded-lg border border-white/10 text-xs font-semibold text-white/70 hover:bg-white/5 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground/70 hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-colors"
                 >
                   Next
                 </button>
@@ -714,7 +714,7 @@ export default function ResourceBookingPage() {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
               </div>
             </Field>
             <Field label="Booked By">
@@ -769,7 +769,7 @@ export default function ResourceBookingPage() {
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
-                className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors"
+                className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
               >
                 Cancel
               </button>

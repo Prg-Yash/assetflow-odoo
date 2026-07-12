@@ -3,6 +3,7 @@ import { AuthRequest } from "../middleware/auth.middleware.js";
 import { db } from "@repo/db";
 import { ApiError } from "../middleware/error.middleware.js";
 import { recordActivityLog } from "../utils/activity.util.js";
+import { queueService } from "../services/queue.service.js";
 import crypto from "crypto";
 
 export const getInvites = async (
@@ -37,10 +38,44 @@ export const createInvite = async (
 ) => {
   try {
     const organizationId = req.organizationId!;
-    const { email, roleId } = req.body;
+    const { email, roleId, name, designation, departmentId, phone } = req.body;
 
     if (!email || !roleId) {
       throw new ApiError(400, "email and roleId are required");
+    }
+
+    // 1. Check if the user is already a member of this organization (including the owner)
+    const existingUser = await db.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      const existingMember = await db.organizationMember.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId,
+            userId: existingUser.id,
+          },
+        },
+      });
+
+      if (existingMember) {
+        throw new ApiError(400, "This user already exists in the organization.");
+      }
+    }
+
+    // 2. Check if there is already an active invitation pending for this email in this organization
+    const existingInvite = await db.invite.findFirst({
+      where: {
+        organizationId,
+        email,
+        accepted: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (existingInvite) {
+      throw new ApiError(400, "An active invitation has already been sent to this email address.");
     }
 
     const role = await db.role.findFirst({
@@ -49,6 +84,18 @@ export const createInvite = async (
 
     if (!role) {
       throw new ApiError(404, "Role not found in organization");
+    }
+
+    if (role.roleType === "ADMIN") {
+      throw new ApiError(403, "Inviting workspace administrators is not allowed.");
+    }
+
+    const org = await db.organization.findUnique({
+      where: { id: organizationId },
+    });
+
+    if (!org) {
+      throw new ApiError(404, "Organization not found");
     }
 
     const token = crypto.randomBytes(32).toString("hex");
@@ -62,8 +109,26 @@ export const createInvite = async (
         invitedById: req.user?.id || null,
         token,
         expiresAt,
+        name: name ? String(name) : null,
+        designation: designation ? String(designation) : null,
+        departmentId: departmentId ? String(departmentId) : null,
+        phone: phone ? String(phone) : null,
       },
       include: { role: true },
+    });
+
+    // Queue email sending job
+    await queueService.sendEmailJob({
+      to: email,
+      subject: `Invite to join ${org.name} on AssetFlow`,
+      template: "organization_invite",
+      context: {
+        inviteName: name || email,
+        organizationName: org.name,
+        roleName: role.name,
+        inviteLink: `${process.env.CORS_ORIGIN || 'http://localhost:3000'}/auth/accept-invite?token=${token}`,
+        designation: designation || "Employee",
+      },
     });
 
     await recordActivityLog({
@@ -100,8 +165,14 @@ export const acceptInvite = async (
       include: { role: true },
     });
 
-    if (!invite || invite.accepted) {
-      throw new ApiError(400, "Invalid or already accepted invite token");
+    console.log("[acceptInvite] Received token to verify:", token);
+
+    if (!invite) {
+      throw new ApiError(400, `Invite token not found: ${token}`);
+    }
+
+    if (invite.accepted) {
+      throw new ApiError(400, "This invitation has already been accepted");
     }
 
     if (new Date() > invite.expiresAt) {
@@ -115,11 +186,13 @@ export const acceptInvite = async (
 
     await db.$transaction(async (tx) => {
       // 1. Update legacy User fields (backward compat)
+      const user = await tx.user.findUnique({ where: { id: userId } });
       await tx.user.update({
         where: { id: userId },
         data: {
           organizationId: invite.organizationId,
           roleId: invite.roleId,
+          name: user?.name ? user.name : (invite.name || user?.name || "Accepted User"),
         },
       });
 
@@ -149,13 +222,15 @@ export const acceptInvite = async (
         const empCount = await tx.employee.count({ where: { organizationId: invite.organizationId } });
         const employeeCode = `EMP-${String(empCount + 1).padStart(4, "0")}`;
 
-        // 5. Create Employee profile inside the organization
+        // 5. Create Employee profile inside the organization using the invitation metadata
         await tx.employee.create({
           data: {
             organizationId: invite.organizationId,
             userId,
             employeeCode,
-            designation: invite.role.name,
+            designation: invite.designation || invite.role.name,
+            departmentId: invite.departmentId || null,
+            phone: invite.phone || null,
             isActive: true,
           },
         });
@@ -180,6 +255,103 @@ export const acceptInvite = async (
     res.status(200).json({
       success: true,
       message: "Successfully joined organization",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resendInvite = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const organizationId = req.organizationId!;
+    const id = String(req.params.id);
+
+    const invite = await db.invite.findFirst({
+      where: { id, organizationId },
+      include: { role: true, organization: true },
+    });
+
+    if (!invite) {
+      throw new ApiError(404, "Invitation not found");
+    }
+
+    if (invite.accepted) {
+      throw new ApiError(400, "Invitation has already been accepted");
+    }
+
+    // Regenerate token and update expiry (7 days)
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const updatedInvite = await db.invite.update({
+      where: { id: invite.id },
+      data: {
+        token,
+        expiresAt,
+      },
+    });
+
+    // Queue email sending job
+    await queueService.sendEmailJob({
+      to: invite.email,
+      subject: `Resent: Invite to join ${invite.organization.name} on AssetFlow`,
+      template: "organization_invite",
+      context: {
+        inviteName: invite.name || invite.email,
+        organizationName: invite.organization.name,
+        roleName: invite.role.name,
+        inviteLink: `${process.env.CORS_ORIGIN || 'http://localhost:3000'}/auth/accept-invite?token=${token}`,
+        designation: invite.designation || "Employee",
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Invitation resent successfully",
+      data: updatedInvite,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteInvite = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const organizationId = req.organizationId!;
+    const id = String(req.params.id);
+
+    const invite = await db.invite.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!invite) {
+      throw new ApiError(404, "Invitation not found");
+    }
+
+    await db.invite.delete({
+      where: { id: invite.id },
+    });
+
+    await recordActivityLog({
+      organizationId,
+      userId: req.user?.id,
+      entity: "Invite",
+      entityId: id,
+      action: "DELETED",
+      metadata: { email: invite.email },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Invitation deleted successfully",
     });
   } catch (error) {
     next(error);

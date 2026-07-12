@@ -491,6 +491,8 @@ model Asset {
 
   @@unique([organizationId, assetCode])
   @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
   @@index([categoryId])
   @@index([departmentId])
   @@index([locationId])
@@ -557,6 +559,7 @@ model Allocation {
   updatedAt       DateTime         @updatedAt
 
   @@index([organizationId])
+  @@index([organizationId, status, allocatedAt])
   @@index([assetId])
   @@index([employeeId])
   @@index([status])
@@ -611,6 +614,7 @@ model Booking {
   updatedAt      DateTime      @updatedAt
 
   @@index([organizationId])
+  @@index([organizationId, status, startTime])
   @@index([assetId, startTime, endTime])
   @@index([employeeId])
   @@index([status])
@@ -647,6 +651,7 @@ model MaintenanceRequest {
   attachments    Attachment[]
 
   @@index([organizationId])
+  @@index([organizationId, openedAt])
   @@index([assetId])
   @@index([status])
   @@index([priority])
@@ -843,10 +848,10 @@ model ApprovalRequest {
   updatedAt       DateTime              @updatedAt
 
   @@index([organizationId])
+  @@index([organizationId, createdAt])
   @@index([assetId])
   @@index([employeeId])
   @@index([status])
   @@index([requestType])
   @@map("approval_request")
 }
-

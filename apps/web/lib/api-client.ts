@@ -34,6 +34,33 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   return data as T
 }
 
+export async function requestBlob(path: string, options: RequestInit = {}) {
+  const headers = new Headers(options.headers)
+
+  if (typeof window !== 'undefined') {
+    const activeOrgId = sessionStorage.getItem('assetflow:activeOrgId')
+    if (activeOrgId && !headers.has('x-organization-id')) {
+      headers.set('x-organization-id', activeOrgId)
+    }
+  }
+
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    const contentType = response.headers.get('content-type')
+    const data = contentType?.includes('application/json') ? await response.json() : null
+    throw new Error(getErrorMessage(data, `Request failed with status ${response.status}`))
+  }
+
+  const disposition = response.headers.get('content-disposition')
+  const filename = disposition?.match(/filename="?(?<filename>[^";]+)"?/)?.groups?.filename
+  return { blob: await response.blob(), filename }
+}
+
 function getErrorMessage(data: unknown, fallback: string): string {
   if (!data || typeof data !== 'object') return fallback
 

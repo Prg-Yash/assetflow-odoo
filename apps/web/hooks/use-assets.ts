@@ -29,6 +29,7 @@ export function useCreateAsset() {
     mutationFn: (data: CreateAssetRequest) => AssetService.createAsset(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
     },
   })
 }
@@ -41,6 +42,7 @@ export function useUpdateAsset() {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['assets'] })
       queryClient.invalidateQueries({ queryKey: ['asset', variables.id] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
     },
   })
 }
@@ -51,6 +53,7 @@ export function useDeleteAsset() {
     mutationFn: (id: string) => AssetService.deleteAsset(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
     },
   })
 }

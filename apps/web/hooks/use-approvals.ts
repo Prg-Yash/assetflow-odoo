@@ -29,6 +29,7 @@ export function useCreateApprovalRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['approvalRequests'] })
       queryClient.invalidateQueries({ queryKey: ['approvalStats'] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
     },
   })
 }
@@ -43,6 +44,7 @@ export function useApproveRequest() {
       queryClient.invalidateQueries({ queryKey: ['approvalStats'] })
       queryClient.invalidateQueries({ queryKey: ['assets'] })
       queryClient.invalidateQueries({ queryKey: ['asset'] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
     },
   })
 }
@@ -55,6 +57,7 @@ export function useRejectRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['approvalRequests'] })
       queryClient.invalidateQueries({ queryKey: ['approvalStats'] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
     },
   })
 }

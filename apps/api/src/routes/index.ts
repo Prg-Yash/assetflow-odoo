@@ -1,6 +1,5 @@
 import { Router } from "express";
 import healthRouter from "./health.route.js";
-import authRouter from "./auth.route.js";
 import mediaRouter from "./media.route.js";
 import protectedRouter from "./protected.route.js";
 import organizationsRouter from "./organizations.route.js";
@@ -26,8 +25,6 @@ const router = Router();
 // Base System / Health
 router.use("/health", healthRouter);
 
-// Authentication & Session (modularized)
-router.use("/auth", authRouter);
 router.use("/media", mediaRouter);
 router.use("/protected", protectedRouter);
 

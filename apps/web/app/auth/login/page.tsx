@@ -38,7 +38,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex bg-background text-foreground font-sans">
 
       {/* ── LEFT PANEL (lg+) ──────────────────────────────────────────── */}
-      <aside className="hidden lg:flex flex-col justify-between w-[46%] xl:w-[42%] relative overflow-hidden  px-12 py-14 text-secondary-foreground">
+      <aside className="hidden lg:flex flex-col justify-between w-[46%] xl:w-[42%] relative overflow-hidden bg-[hsl(222_22%_8%)] px-12 py-14 text-white">
         {/* Decorative blobs */}
         <div
           aria-hidden
@@ -176,7 +176,7 @@ export default function LoginPage() {
                 {/* Forgot password */}
                 <div className="flex justify-end pt-0.5">
                   <Link
-                    href="/auth/forgot-password"
+                    href="/auth/forgot"
                     className="text-xs text-white/40 hover:text-accent transition-colors"
                   >
                     Forgot password

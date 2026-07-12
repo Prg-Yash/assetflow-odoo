@@ -16,109 +16,38 @@ export function WhyChooseSection() {
   const steps: WhyChooseStep[] = [
     {
       icon: <FileText className="h-8 w-8" />,
-      title: 'Eliminate spreadsheet chaos with centralized tracking',
-      description: 'Prevent asset conflicts with intelligent allocation rules',
+      title: 'Register assets in one place',
+      description: 'Capture devices, tools, and inventory with a single source of truth',
       number: '01',
     },
     {
       icon: <Database className="h-8 w-8" />,
-      title: 'Reduce maintenance delays with approval workflows',
-      description: 'Maintain compliance through automated audit cycles',
+      title: 'Assign ownership and locations',
+      description: 'Move assets between teams, sites, and storage with clear accountability',
       number: '02',
     },
     {
       icon: <Clock className="h-8 w-8" />,
-      title: 'Make data-driven decisions with real-time analytics',
-      description: 'Eliminate spreadsheet chaos with centralized tracking',
+      title: 'Track maintenance and status',
+      description: 'Monitor requests, downtime, and lifecycle events before issues spread',
       number: '03',
     },
     {
       icon: <BarChart3 className="h-8 w-8" />,
-      title: 'Maintain compliance through automated audit cycles',
-      description: 'Prevent asset conflicts with intelligent allocation rules',
+      title: 'Review audits and performance',
+      description: 'Use live reports to improve compliance and forecast needs',
       number: '04',
     },
   ]
 
-  const step = steps[currentStep]
+  const activeStepIndex = Math.min(currentStep, steps.length - 1)
+  const step = steps[activeStepIndex]!
 
   return (
     <section id="how-it-works" className="relative py-20 md:py-32 overflow-hidden">
-      {/* Enhanced Background with multiple layers */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background" />
-      <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+     
       
-      {/* Animated gradient orbs - GPU accelerated */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{
-            x: [0, 100, 0],
-            y: [0, -50, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          style={{ willChange: 'transform' }}
-          className="absolute top-20 left-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            x: [0, -80, 0],
-            y: [0, 80, 0],
-            scale: [1, 1.3, 1],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          style={{ willChange: 'transform' }}
-          className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            x: [0, 60, 0],
-            y: [0, -60, 0],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          style={{ willChange: 'transform' }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-accent/5 rounded-full blur-3xl"
-        />
-      </div>
-      
-      {/* Floating dots decoration - Reduced from 20 to 8 for performance */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0.3, 0.6, 0.3],
-            }}
-            transition={{
-              duration: 3 + i * 0.2,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: i * 0.1,
-            }}
-            style={{
-              willChange: 'transform, opacity',
-              left: `${10 + (i * 11)}%`,
-              top: `${15 + (i * 8)}%`,
-            }}
-            className="absolute w-1 h-1 bg-primary/40 rounded-full"
-          />
-        ))}
-      </div>
-      
-      <div className="relative z-10 max-w-[1600px] mx-auto px-4">
+      <div className="relative z-10 max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -127,14 +56,14 @@ export function WhyChooseSection() {
           className="text-center mb-20"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/5 text-sm font-medium text-primary mb-6">
-            Simple Process
+            AssetFlow Workflow
           </div>
           <h2 className="text-3xl md:text-5xl font-bold mb-6">
-            From Stock to Success
-            <span className="block mt-2 text-primary">in Four Steps</span>
+            From asset intake
+            <span className="block mt-2 text-primary">to audit-ready operations</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Our streamlined workflow ensures efficient inventory management from start to finish
+            AssetFlow keeps inventory, ownership, maintenance, and compliance connected in one workflow.
           </p>
         </motion.div>
 
@@ -156,14 +85,14 @@ export function WhyChooseSection() {
                   <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
                 </div>
                 <div className="flex-1 mx-4 px-3 py-1 bg-background/50 rounded text-xs text-muted-foreground text-center">
-                  stockmaster.app/{steps[0]?.title.toLowerCase().replace(' ', '-')}
+                  assetflow.app/{step.title.toLowerCase().replace(/\s+/g, '-')}
                 </div>
               </div>
 
               {/* Main Dashboard Layout with Sidebar */}
               <div className="flex bg-gradient-to-br from-background to-muted/20 min-h-[600px]">
                 {/* Embedded Step Navigation Sidebar */}
-                <div className="w-80 border-r border-black/25 dark:border-white/10 bg-card/30 p-4 flex flex-col gap-3">
+                <div className="w-[30rem] shrink-0 border-r border-black/25 dark:border-white/10 bg-card/30 p-4 flex flex-col items-stretch gap-3">
                   <div className="text-sm font-semibold text-muted-foreground mb-2 px-2">Workflow Steps</div>
                   {steps.map((s, index) => (
                     <motion.button
@@ -171,7 +100,7 @@ export function WhyChooseSection() {
                       onClick={() => setCurrentStep(index)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`text-left p-4 rounded-lg border transition-all ${
+                      className={`w-full self-stretch text-left p-4 rounded-lg border transition-all ${
                         index === currentStep
                           ? 'border-primary bg-primary/10 shadow-md'
                           : 'border-black/25 dark:border-white/10 bg-card/50 hover:bg-card/80 hover:border-primary/50'
@@ -227,11 +156,11 @@ export function WhyChooseSection() {
                   <div className="mb-6">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl shadow-lg">
-                        {steps[0]?.number}
+                        {step.number}
                       </div>
                       <div>
-                        <h3 className="text-2xl font-bold">{steps[0]?.title}</h3>
-                        <p className="text-sm text-muted-foreground">{steps[0]?.description}</p>
+                        <h3 className="text-2xl font-bold">{step.title}</h3>
+                        <p className="text-sm text-muted-foreground">{step.description}</p>
                       </div>
                     </div>
                   </div>
@@ -240,13 +169,13 @@ export function WhyChooseSection() {
                   <div className="space-y-4">
                   {currentStep === 0 && (
                     <>
-                      {/* Receive Stock View */}
+                      {/* Asset intake view */}
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
                           <PackageCheck className="h-8 w-8 text-primary" />
                           <div className="flex-1">
-                            <div className="text-sm text-muted-foreground mb-1">Scanning Item</div>
-                            <div className="text-xl font-bold">SKU-12345</div>
+                            <div className="text-sm text-muted-foreground mb-1">Registering asset</div>
+                            <div className="text-xl font-bold">Laptop - IT-2048</div>
                           </div>
                           <div className="text-green-500 font-bold">✓ Verified</div>
                         </div>
@@ -254,8 +183,8 @@ export function WhyChooseSection() {
                           <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-card/60 border border-black/25 dark:border-white/10">
                             <div className="w-10 h-10 rounded bg-muted/50" />
                             <div className="flex-1">
-                              <div className="h-3 w-32 bg-muted/50 rounded mb-2" />
-                              <div className="h-2 w-20 bg-muted/30 rounded" />
+                              <div className="h-3 w-40 bg-muted/50 rounded mb-2" />
+                              <div className="h-2 w-28 bg-muted/30 rounded" />
                             </div>
                             <div className="w-16 h-8 rounded bg-green-500/10 flex items-center justify-center text-xs text-green-500">+{i * 10}</div>
                           </div>
@@ -265,7 +194,7 @@ export function WhyChooseSection() {
                   )}
                   {currentStep === 1 && (
                     <>
-                      {/* Store Inventory View */}
+                      {/* Ownership and location view */}
                       <div className="grid grid-cols-3 gap-3 mb-4">
                         {['A-01', 'A-02', 'A-03', 'B-01', 'B-02', 'B-03'].map((loc, i) => (
                           <div key={loc} className={`p-3 rounded-lg border text-center ${
@@ -273,21 +202,27 @@ export function WhyChooseSection() {
                           }`}>
                             <Database className="h-6 w-6 mx-auto mb-2 text-primary" />
                             <div className="text-xs font-medium">{loc}</div>
-                            <div className="text-xs text-muted-foreground mt-1">{i === 1 ? 'Optimal' : `${85 - i * 10}%`}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{i === 1 ? 'Assigned' : `${85 - i * 10}%`}</div>
                           </div>
                         ))}
+                      </div>
+                      <div className="p-4 rounded-lg bg-card/70 border border-black/25 dark:border-white/10">
+                        <div className="text-sm font-semibold mb-2">Transfer summary</div>
+                        <div className="text-sm text-muted-foreground">
+                          AssetFlow records department, site, and owner changes automatically so teams always know who has what.
+                        </div>
                       </div>
                     </>
                   )}
                   {currentStep === 2 && (
                     <>
-                      {/* Process Orders View */}
+                      {/* Maintenance and status view */}
                       <div className="space-y-3">
                         {[1, 2, 3, 4].map((i) => (
                           <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-card/60 border border-black/25 dark:border-white/10">
-                                <Clock className="h-6 w-6 text-primary" />
+                            <Clock className="h-6 w-6 text-primary" />
                             <div className="flex-1">
-                              <div className="text-sm font-medium mb-1">Order #{1000 + i}</div>
+                              <div className="text-sm font-medium mb-1">Maintenance request #{1000 + i}</div>
                               <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                                 <div className="h-full bg-primary" style={{ width: `${i * 25}%` }} />
                               </div>
@@ -296,11 +231,17 @@ export function WhyChooseSection() {
                           </div>
                         ))}
                       </div>
+                      <div className="p-4 rounded-lg bg-card/70 border border-black/25 dark:border-white/10">
+                        <div className="text-sm font-semibold mb-2">Compliance note</div>
+                        <div className="text-sm text-muted-foreground">
+                          Approval trails and service history stay attached to each asset for easier audits.
+                        </div>
+                      </div>
                     </>
                   )}
                   {currentStep === 3 && (
                     <>
-                      {/* Optimize Flow View */}
+                      {/* Analytics and audit view */}
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                           <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
@@ -326,6 +267,12 @@ export function WhyChooseSection() {
                                 style={{ height: `${height}%` }}
                               />
                             ))}
+                          </div>
+                        </div>
+                        <div className="p-4 rounded-lg bg-card/70 border border-black/25 dark:border-white/10">
+                          <div className="text-sm font-semibold mb-2">Audit ready</div>
+                          <div className="text-sm text-muted-foreground">
+                            Live reports surface exceptions, utilization, and renewal risks before they become blockers.
                           </div>
                         </div>
                       </div>

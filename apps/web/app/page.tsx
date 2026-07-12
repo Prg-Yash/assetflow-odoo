@@ -1,7 +1,9 @@
-import { ArrowRight, Package, Users, BookOpen, Zap, BarChart3, CheckCircle } from 'lucide-react'
+import { ArrowRight, Package, Users, BookOpen, Zap, BarChart3, CheckCircle, Download, Smartphone } from 'lucide-react'
 import Link from 'next/link'
 import { LandingNav } from './components/landing-nav'
+import { PhoneFlowDemo } from './components/phone-flow-demo'
 import { HowItWorksSection } from './components/how-it-works-section'
+import { WhyChooseSection } from './components/why-choose-section'
 
 export const metadata = {
   title: 'AssetFlow — Enterprise Asset Management',
@@ -112,62 +114,69 @@ export default function Page() {
       <section id="benefits" className="border-t border-border min-h-[80vh] flex items-center py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <div className="space-y-16">
-            <div className="space-y-4 text-center">
-              <h2 className="text-5xl sm:text-6xl font-bold tracking-tight">Why Choose AssetFlow?</h2>
-            </div>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-6">
-                {[
-                  'Eliminate spreadsheet chaos with centralized tracking',
-                  'Prevent asset conflicts with intelligent allocation rules',
-                  'Reduce maintenance delays with approval workflows',
-                  'Make data-driven decisions with real-time analytics',
-                  'Maintain compliance through automated audit cycles',
-                ].map((benefit, i) => (
-                  <div key={i} className="flex gap-4 items-start group hover:translate-x-2 transition-transform duration-300">
-                    <div className="flex-shrink-0 mt-1 p-2 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors duration-300">
-                      <CheckCircle className="text-accent" size={20} />
-                    </div>
-                    <p className="font-semibold text-foreground text-lg">{benefit}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-card border border-border rounded-lg h-96 flex items-center justify-center hover:shadow-lg hover:border-accent/30 transition-all duration-300">
-                <div className="text-center space-y-4">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-accent/10">
-                    <BarChart3 className="text-accent" size={32} />
-                  </div>
-                  <div className="text-muted-foreground font-medium">Dashboard Preview</div>
-                </div>
-              </div>
-            </div>
+            
+              
+           <WhyChooseSection />
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="border-t border-border bg-card min-h-[80vh] flex items-center py-16 sm:py-20">
-        <div className="mx-auto max-w-4xl px-6 sm:px-8">
-          <div className="rounded-xl border border-border bg-gradient-to-br from-accent/5 to-secondary/5 p-12 sm:p-16 text-center space-y-8">
-            <div className="space-y-4">
-              <h2 className="text-5xl sm:text-6xl font-bold tracking-tight">Ready to Transform Asset Management?</h2>
-              <p className="text-xl text-muted-foreground font-medium">
-                Join organizations simplifying their operations with AssetFlow.
+      {/* Mobile App Download Section */}
+      <section id="mobile-app" className="border-t border-border bg-card min-h-[90vh] flex items-center py-20 sm:py-24 lg:py-28">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8 w-full">
+          <div className="grid gap-16 lg:grid-cols-[1.1fr_0.9fr] items-center">
+            <div className="space-y-8">
+              <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                <Smartphone className="h-4 w-4" />
+                Mobile App
+              </div>
+              <div className="space-y-4 max-w-2xl">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
+                  Download our mobile app
+                </h2>
+                <p className="text-lg sm:text-xl text-muted-foreground font-medium leading-relaxed">
+                  Keep asset updates, approvals, and field workflows in your pocket. Install the Android APK to get
+                  quick access wherever your team works.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  'Fast asset check-ins',
+                  'Offline-ready field updates',
+                  'Instant approval alerts',
+                ].map((item) => (
+                  <div key={item} className="rounded-2xl border border-border bg-background/80 px-4 py-3 text-sm font-medium text-foreground shadow-sm">
+                    {item}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/downloads/assetflow-mobile.apk"
+                  download
+                  className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-300"
+                >
+                  <Download className="w-4 h-4" />
+                  Download APK
+                </Link>
+                <Link
+                  href="#features"
+                  className="px-8 py-3 border-2 border-primary text-foreground rounded-lg font-semibold hover:bg-primary/5 transition-colors duration-300 text-center"
+                >
+                  Explore Features
+                </Link>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Android APK available for direct install. Place the file at <span className="font-medium text-foreground">/public/downloads/assetflow-mobile.apk</span>.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/auth/register"
-                className="px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-300"
-              >
-                Start Free Trial <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/auth/login"
-                className="px-8 py-3 border-2 border-primary text-foreground rounded-lg font-semibold hover:bg-primary/5 transition-colors duration-300 text-center"
-              >
-                Schedule Demo
-              </Link>
+
+            <div className="relative flex justify-center lg:justify-end lg:pl-6">
+              <div className="absolute inset-0 -z-10 rounded-full bg-accent/10 blur-3xl" />
+              <PhoneFlowDemo variant="mobile-app" staticStep="download" showArrows={false} sectionActive />
             </div>
           </div>
         </div>

@@ -40,16 +40,8 @@ export function HowItWorksSection() {
       <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-12 md:py-16 w-full">
         <div className="mb-8 md:mb-10 flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <span
-              className={cn(
-                'h-2.5 w-2.5 rounded-full transition-all duration-500',
-                isActive
-                  ? 'bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.35),0_0_0_8px_rgba(52,211,153,0.15)] scale-110'
-                  : 'bg-muted-foreground/30'
-              )}
-              aria-hidden
-            />
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight">How It Works</h2>
+            
+            <h2 className="text-4xl sm:text-5xl md:text-6xl text-center font-bold tracking-tight">How It Works</h2>
           </div>
           <p className="text-base md:text-lg text-muted-foreground max-w-prose font-medium pl-5">
             Streamlined workflow for asset management from registration to resolution.

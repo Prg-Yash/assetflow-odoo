@@ -81,7 +81,7 @@ export const updateEmployee = async (
   try {
     const organizationId = req.organizationId!;
     const id = String(req.params.id);
-    const { departmentId, designation, phone, joiningDate } = req.body;
+    const { departmentId, designation, phone, joiningDate, isActive } = req.body;
 
     const existing = await db.employee.findFirst({
       where: { id, organizationId },
@@ -98,6 +98,7 @@ export const updateEmployee = async (
         ...(designation !== undefined && { designation: designation ? String(designation) : null }),
         ...(phone !== undefined && { phone: phone ? String(phone) : null }),
         ...(joiningDate !== undefined && { joiningDate: joiningDate ? new Date(joiningDate) : null }),
+        ...(isActive !== undefined && { isActive: Boolean(isActive) }),
       },
     });
 
@@ -113,6 +114,50 @@ export const updateEmployee = async (
     res.status(200).json({
       success: true,
       data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteEmployee = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const organizationId = req.organizationId!;
+    const id = String(req.params.id);
+
+    const employee = await db.employee.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!employee) {
+      throw new ApiError(404, "Employee profile not found");
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.organizationMember.deleteMany({
+        where: { userId: employee.userId, organizationId },
+      });
+      await tx.employee.delete({
+        where: { id: employee.id },
+      });
+    });
+
+    await recordActivityLog({
+      organizationId,
+      userId: req.user?.id,
+      entity: "Employee",
+      entityId: id,
+      action: "DELETED",
+      metadata: { employeeCode: employee.employeeCode },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Employee removed from organization successfully",
     });
   } catch (error) {
     next(error);

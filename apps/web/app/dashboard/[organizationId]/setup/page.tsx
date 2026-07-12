@@ -14,11 +14,38 @@ import {
   Pencil,
   Trash2,
   AlertCircle,
+  RefreshCw,
+  Copy,
+  Check,
+  UserCheck,
+  UserX,
+  Clock,
 } from 'lucide-react'
+import {
+  useOrganizations,
+  useSession,
+  useDepartments,
+  useCreateDepartment,
+  useUpdateDepartment,
+  useDeleteDepartment,
+  useCategories,
+  useCreateCategory,
+  useUpdateCategory,
+  useDeleteCategory,
+  useEmployees,
+  useUpdateEmployee,
+  useDeleteEmployee,
+  useRoles,
+  useInvitations,
+  useInviteEmployee,
+  useResendInvitation,
+  useDeleteInvitation,
+} from '@/hooks/use-organizations'
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
 type Status = 'Active' | 'Inactive'
+type Tab = 'departments' | 'categories' | 'employees'
 
 interface Department {
   id: string
@@ -32,69 +59,55 @@ interface Category {
   id: string
   name: string
   description: string
-  assetCount: number
+  depreciationRate: number
+  lifespan: number
   status: Status
 }
 
-interface Employee {
-  id: string
-  firstName: string
-  lastName: string
+interface EmployeeRow {
+  type: 'member' | 'invite'
+  id: string // employee id or invite id
+  name: string
   email: string
   department: string
+  departmentId?: string
+  designation: string
   role: string
-  status: Status
-}
-
-type Tab = 'departments' | 'categories' | 'employees'
-
-/* ─── Seed data ────────────────────────────────────────────────────────────── */
-
-const SEED_DEPARTMENTS: Department[] = [
-  { id: 'd1', name: 'Engineering',       head: 'Aditi Rao',   parentDept: '—',        status: 'Active' },
-  { id: 'd2', name: 'Facilities',        head: 'Rohan Mehta', parentDept: '—',        status: 'Active' },
-  { id: 'd3', name: 'Field Ops (East)',  head: 'Sana Iqbal',  parentDept: 'Field Ops', status: 'Inactive' },
-]
-
-const SEED_CATEGORIES: Category[] = [
-  { id: 'c1', name: 'Laptops & Computers', description: 'End-user compute devices',   assetCount: 142, status: 'Active' },
-  { id: 'c2', name: 'Office Furniture',    description: 'Desks, chairs, shelves',      assetCount: 89,  status: 'Active' },
-  { id: 'c3', name: 'Vehicles',            description: 'Company-owned motor vehicles', assetCount: 14,  status: 'Active' },
-  { id: 'c4', name: 'AV Equipment',        description: 'Projectors, displays, cameras', assetCount: 31, status: 'Inactive' },
-]
-
-const SEED_EMPLOYEES: Employee[] = [
-  { id: 'e1', firstName: 'Aditi',  lastName: 'Rao',    email: 'aditi@acme.com',  department: 'Engineering',      role: 'Manager',       status: 'Active' },
-  { id: 'e2', firstName: 'Rohan',  lastName: 'Mehta',  email: 'rohan@acme.com',  department: 'Facilities',       role: 'Manager',       status: 'Active' },
-  { id: 'e3', firstName: 'Sana',   lastName: 'Iqbal',  email: 'sana@acme.com',   department: 'Field Ops (East)', role: 'Employee',      status: 'Inactive' },
-  { id: 'e4', firstName: 'Priya',  lastName: 'Singh',  email: 'priya@acme.com',  department: 'Engineering',      role: 'Employee',      status: 'Active' },
-  { id: 'e5', firstName: 'Marcus', lastName: 'Hall',   email: 'marcus@acme.com', department: 'Facilities',       role: 'Administrator', status: 'Active' },
-]
-
-/* ─── Utilities ────────────────────────────────────────────────────────────── */
-
-function uid() {
-  return Math.random().toString(36).slice(2, 9)
+  roleId: string
+  status: string
+  joinedDate: string
+  lastSent: string
+  phone: string
+  token?: string
+  isActive?: boolean
 }
 
 /* ─── Sub-components ───────────────────────────────────────────────────────── */
 
-function StatusBadge({ status }: { status: Status }) {
-  const active = status === 'Active'
+function StatusBadge({ status }: { status: string }) {
+  const active = status === 'Active' || status === 'Accepted'
+  const pending = status === 'Pending Invitation'
+  const expired = status === 'Expired'
+  const declined = status === 'Declined'
+  const cancelled = status === 'Cancelled'
+
+  let classes = 'text-white/40 border-white/10 bg-white/5'
+  let Icon = XCircle
+
+  if (active) {
+    classes = 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
+    Icon = CheckCircle2
+  } else if (pending) {
+    classes = 'text-amber-400 border-amber-500/30 bg-amber-500/10'
+    Icon = Clock
+  } else if (expired || declined || cancelled) {
+    classes = 'text-red-400 border-red-500/30 bg-red-500/10'
+    Icon = XCircle
+  }
+
   return (
-    <span
-      className={[
-        'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border',
-        active
-          ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
-          : 'text-white/40 border-white/10 bg-white/5',
-      ].join(' ')}
-    >
-      {active ? (
-        <CheckCircle2 className="w-3 h-3" />
-      ) : (
-        <XCircle className="w-3 h-3" />
-      )}
+    <span className={['inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border', classes].join(' ')}>
+      <Icon className="w-3 h-3" />
       {status}
     </span>
   )
@@ -123,7 +136,6 @@ function SearchBar({
   )
 }
 
-/* Toast */
 interface ToastState { show: boolean; message: string; type: 'success' | 'error' }
 
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
@@ -155,9 +167,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
   )
 }
 
-/* Modal wrapper */
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', handler)
@@ -166,11 +176,8 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      {/* Panel */}
       <div className="relative z-10 w-full max-w-lg rounded-2xl border border-white/10 bg-[hsl(240_10%_9%)] shadow-2xl shadow-black/60 overflow-hidden animate-in zoom-in-95 fade-in duration-200">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
           <h3 className="text-base font-semibold text-white">{title}</h3>
           <button
@@ -186,14 +193,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   )
 }
 
-/* Form field helper */
-function Field({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <label className="block text-xs font-medium text-white/60 uppercase tracking-wide">
@@ -205,88 +205,150 @@ function Field({
 }
 
 const inputCls =
-  'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition'
+  'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition disabled:opacity-50'
 
 const selectCls =
-  'w-full rounded-lg border border-white/10 bg-[hsl(240_10%_12%)] px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none'
+  'w-full rounded-lg border border-white/10 bg-[hsl(240_10%_12%)] px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none disabled:opacity-50'
+
+/* ─── Skeletons ────────────────────────────────────────────────────────────── */
+
+function SkeletonTable() {
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4 animate-pulse space-y-4">
+      <div className="h-4 bg-white/10 rounded w-1/4" />
+      <hr className="border-white/8" />
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex gap-4 items-center">
+          <div className="h-4 bg-white/10 rounded w-1/3" />
+          <div className="h-4 bg-white/10 rounded w-1/4" />
+          <div className="h-4 bg-white/10 rounded w-1/5" />
+          <div className="ml-auto h-6 bg-white/10 rounded w-12" />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 /* ─── DEPARTMENTS TAB ──────────────────────────────────────────────────────── */
 
-function DepartmentsTab({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) {
-  const [rows, setRows] = useState<Department[]>(SEED_DEPARTMENTS)
+function DepartmentsTab({
+  showToast,
+  isReadOnly,
+}: {
+  showToast: (msg: string, type?: 'success' | 'error') => void
+  isReadOnly: boolean
+}) {
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
-  const [editingItem, setEditingItem] = useState<Department | null>(null)
-  
-  const [form, setForm] = useState({ name: '', head: '', parentDept: '', status: 'Active' as Status })
-  const [editForm, setEditForm] = useState({ name: '', head: '', parentDept: '', status: 'Active' as Status })
+  const [editingItem, setEditingItem] = useState<any | null>(null)
 
-  const filtered = rows.filter(
+  const [form, setForm] = useState({ name: '', managerId: '', parentDepartmentId: '' })
+  const [editForm, setEditForm] = useState({ name: '', managerId: '', parentDepartmentId: '', isActive: true })
+
+  // Hooks
+  const { data: depts, isLoading } = useDepartments()
+  const { data: employees } = useEmployees()
+
+  const createMutation = useCreateDepartment()
+  const updateMutation = useUpdateDepartment()
+  const deleteMutation = useDeleteDepartment()
+
+  const filtered = (depts ?? []).filter(
     (r) =>
       r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.head.toLowerCase().includes(search.toLowerCase()),
+      (r.manager?.user?.name ?? '').toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) return
-    setRows((prev) => [
-      ...prev,
-      { id: uid(), name: form.name, head: form.head, parentDept: form.parentDept || '—', status: form.status },
-    ])
-    setForm({ name: '', head: '', parentDept: '', status: 'Active' })
-    setShowAdd(false)
-    showToast('Department added successfully')
+
+    try {
+      await createMutation.mutateAsync({
+        name: form.name.trim(),
+        managerId: form.managerId || null,
+        parentDepartmentId: form.parentDepartmentId || null,
+      })
+      setForm({ name: '', managerId: '', parentDepartmentId: '' })
+      setShowAdd(false)
+      showToast('Department added successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to add department', 'error')
+    }
   }
 
-  const handleEditClick = (dept: Department) => {
+  const handleEditClick = (dept: any) => {
     setEditingItem(dept)
     setEditForm({
       name: dept.name,
-      head: dept.head,
-      parentDept: dept.parentDept === '—' ? '' : dept.parentDept,
-      status: dept.status,
+      managerId: dept.managerId ?? '',
+      parentDepartmentId: dept.parentDepartmentId ?? '',
+      isActive: dept.isActive,
     })
   }
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingItem || !editForm.name.trim()) return
-    setRows((prev) =>
-      prev.map((r) =>
-        r.id === editingItem.id
-          ? { ...r, name: editForm.name, head: editForm.head, parentDept: editForm.parentDept || '—', status: editForm.status }
-          : r
-      )
-    )
-    setEditingItem(null)
-    showToast('Department updated successfully')
+
+    try {
+      await updateMutation.mutateAsync({
+        id: editingItem.id,
+        data: {
+          name: editForm.name.trim(),
+          managerId: editForm.managerId || null,
+          parentDepartmentId: editForm.parentDepartmentId || null,
+          isActive: editForm.isActive,
+        },
+      })
+      setEditingItem(null)
+      showToast('Department updated successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update department', 'error')
+    }
   }
 
-  const handleDelete = (id: string) => {
-    setRows((prev) => prev.filter((r) => r.id !== id))
-    showToast('Department removed', 'error')
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+      showToast('Department removed successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete department', 'error')
+    }
   }
 
-  const toggleStatus = (id: string) => {
-    setRows((prev) =>
-      prev.map((r) => r.id === id ? { ...r, status: r.status === 'Active' ? 'Inactive' : 'Active' } : r)
-    )
+  const toggleStatus = async (dept: any) => {
+    if (isReadOnly) return
+    try {
+      await updateMutation.mutateAsync({
+        id: dept.id,
+        data: {
+          isActive: !dept.isActive,
+        },
+      })
+      showToast(`Department ${!dept.isActive ? 'activated' : 'deactivated'} successfully`)
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to change department status', 'error')
+    }
   }
+
+  if (isLoading) return <SkeletonTable />
 
   return (
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <SearchBar value={search} onChange={setSearch} placeholder="Search departments…" />
-        <button
-          id="add-department-btn"
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150"
-        >
-          <Plus className="w-4 h-4" />
-          Add Department
-        </button>
+        {!isReadOnly && (
+          <button
+            id="add-department-btn"
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150"
+          >
+            <Plus className="w-4 h-4" />
+            Add Department
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -310,43 +372,48 @@ function DepartmentsTab({ showToast }: { showToast: (msg: string, type?: 'succes
                   </td>
                 </tr>
               ) : (
-                filtered.map((dept) => (
-                  <tr key={dept.id} className="hover:bg-white/2 transition-colors group">
-                    <td className="px-5 py-4 font-medium text-white">{dept.name}</td>
-                    <td className="px-5 py-4 text-white/70">{dept.head}</td>
-                    <td className="px-5 py-4 text-white/50">{dept.parentDept}</td>
-                    <td className="px-5 py-4">
-                      <button onClick={() => toggleStatus(dept.id)} className="hover:opacity-80 transition-opacity">
-                        <StatusBadge status={dept.status} />
-                      </button>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                filtered.map((dept) => {
+                  const parentName = depts?.find((d) => d.id === dept.parentDepartmentId)?.name ?? '—'
+                  return (
+                    <tr key={dept.id} className="hover:bg-white/2 transition-colors group">
+                      <td className="px-5 py-4 font-medium text-white">{dept.name}</td>
+                      <td className="px-5 py-4 text-white/70">{dept.manager?.user?.name ?? '—'}</td>
+                      <td className="px-5 py-4 text-white/50">{parentName}</td>
+                      <td className="px-5 py-4">
                         <button
-                          onClick={() => handleEditClick(dept)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
+                          disabled={isReadOnly}
+                          onClick={() => toggleStatus(dept)}
+                          className="hover:opacity-80 transition-opacity disabled:pointer-events-none"
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <StatusBadge status={dept.isActive ? 'Active' : 'Inactive'} />
                         </button>
-                        <button
-                          onClick={() => handleDelete(dept.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        {!isReadOnly && (
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleEditClick(dept)}
+                              className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(dept.id)}
+                              className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
-
-      <p className="text-xs text-white/25 italic">
-        Editing a department here also drives the picklist in asset allocation &amp; employee assignment.
-      </p>
 
       {/* Add Modal */}
       {showAdd && (
@@ -363,32 +430,35 @@ function DepartmentsTab({ showToast }: { showToast: (msg: string, type?: 'succes
               />
             </Field>
             <Field label="Department Head">
-              <input
-                type="text"
-                placeholder="e.g. Aditi Rao"
-                value={form.head}
-                onChange={(e) => setForm((p) => ({ ...p, head: e.target.value }))}
-                className={inputCls}
-              />
-            </Field>
-            <Field label="Parent Department (optional)">
-              <input
-                type="text"
-                placeholder="Leave blank if top-level"
-                value={form.parentDept}
-                onChange={(e) => setForm((p) => ({ ...p, parentDept: e.target.value }))}
-                className={inputCls}
-              />
-            </Field>
-            <Field label="Status">
               <div className="relative">
                 <select
-                  value={form.status}
-                  onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as Status }))}
+                  value={form.managerId}
+                  onChange={(e) => setForm((p) => ({ ...p, managerId: e.target.value }))}
                   className={selectCls}
                 >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
+                  <option value="">No Department Head</option>
+                  {(employees ?? []).map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.user.name} ({emp.employeeCode})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+              </div>
+            </Field>
+            <Field label="Parent Department (optional)">
+              <div className="relative">
+                <select
+                  value={form.parentDepartmentId}
+                  onChange={(e) => setForm((p) => ({ ...p, parentDepartmentId: e.target.value }))}
+                  className={selectCls}
+                >
+                  <option value="">None (Top-Level)</option>
+                  {(depts ?? []).map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
               </div>
@@ -403,9 +473,10 @@ function DepartmentsTab({ showToast }: { showToast: (msg: string, type?: 'succes
               </button>
               <button
                 type="submit"
+                disabled={createMutation.isPending}
                 className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                Add Department
+                {createMutation.isPending ? 'Adding...' : 'Add Department'}
               </button>
             </div>
           </form>
@@ -427,28 +498,46 @@ function DepartmentsTab({ showToast }: { showToast: (msg: string, type?: 'succes
               />
             </Field>
             <Field label="Department Head">
-              <input
-                type="text"
-                placeholder="e.g. Aditi Rao"
-                value={editForm.head}
-                onChange={(e) => setEditForm((p) => ({ ...p, head: e.target.value }))}
-                className={inputCls}
-              />
+              <div className="relative">
+                <select
+                  value={editForm.managerId}
+                  onChange={(e) => setEditForm((p) => ({ ...p, managerId: e.target.value }))}
+                  className={selectCls}
+                >
+                  <option value="">No Department Head</option>
+                  {(employees ?? []).map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.user.name} ({emp.employeeCode})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+              </div>
             </Field>
             <Field label="Parent Department (optional)">
-              <input
-                type="text"
-                placeholder="Leave blank if top-level"
-                value={editForm.parentDept}
-                onChange={(e) => setEditForm((p) => ({ ...p, parentDept: e.target.value }))}
-                className={inputCls}
-              />
+              <div className="relative">
+                <select
+                  value={editForm.parentDepartmentId}
+                  onChange={(e) => setEditForm((p) => ({ ...p, parentDepartmentId: e.target.value }))}
+                  className={selectCls}
+                >
+                  <option value="">None (Top-Level)</option>
+                  {(depts ?? [])
+                    .filter((d) => d.id !== editingItem.id) // Avoid self-hierarchy loops
+                    .map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+              </div>
             </Field>
             <Field label="Status">
               <div className="relative">
                 <select
-                  value={editForm.status}
-                  onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value as Status }))}
+                  value={editForm.isActive ? 'Active' : 'Inactive'}
+                  onChange={(e) => setEditForm((p) => ({ ...p, isActive: e.target.value === 'Active' }))}
                   className={selectCls}
                 >
                   <option value="Active">Active</option>
@@ -467,9 +556,10 @@ function DepartmentsTab({ showToast }: { showToast: (msg: string, type?: 'succes
               </button>
               <button
                 type="submit"
+                disabled={updateMutation.isPending}
                 className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                Save Changes
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </form>
@@ -481,73 +571,127 @@ function DepartmentsTab({ showToast }: { showToast: (msg: string, type?: 'succes
 
 /* ─── CATEGORIES TAB ───────────────────────────────────────────────────────── */
 
-function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) {
-  const [rows, setRows] = useState<Category[]>(SEED_CATEGORIES)
+function CategoriesTab({
+  showToast,
+  isReadOnly,
+}: {
+  showToast: (msg: string, type?: 'success' | 'error') => void
+  isReadOnly: boolean
+}) {
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
-  const [editingItem, setEditingItem] = useState<Category | null>(null)
+  const [editingItem, setEditingItem] = useState<any | null>(null)
 
-  const [form, setForm] = useState({ name: '', description: '', status: 'Active' as Status })
-  const [editForm, setEditForm] = useState({ name: '', description: '', status: 'Active' as Status })
+  const [form, setForm] = useState({ name: '', description: '', depreciationRate: 15, lifespan: 5, parentCategoryId: '', status: 'Active' })
+  const [editForm, setEditForm] = useState({ name: '', description: '', depreciationRate: 15, lifespan: 5, parentCategoryId: '', status: 'Active' })
 
-  const filtered = rows.filter(
+  // Hooks
+  const { data: categories, isLoading } = useCategories()
+  const createMutation = useCreateCategory()
+  const updateMutation = useUpdateCategory()
+  const deleteMutation = useDeleteCategory()
+
+  const mappedCategories: Category[] = (categories ?? []).map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    description: cat.customAttributes?.description ?? '',
+    depreciationRate: cat.customAttributes?.depreciationRate ?? 10,
+    lifespan: cat.customAttributes?.lifespan ?? 5,
+    status: (cat.customAttributes?.status as Status) ?? 'Active',
+  }))
+
+  const filtered = mappedCategories.filter(
     (r) =>
       r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.description.toLowerCase().includes(search.toLowerCase()),
+      r.description.toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) return
-    setRows((prev) => [
-      ...prev,
-      { id: uid(), name: form.name, description: form.description, assetCount: 0, status: form.status },
-    ])
-    setForm({ name: '', description: '', status: 'Active' })
-    setShowAdd(false)
-    showToast('Category added successfully')
+
+    try {
+      await createMutation.mutateAsync({
+        name: form.name.trim(),
+        customAttributes: {
+          description: form.description.trim(),
+          status: form.status as 'Active' | 'Inactive',
+          depreciationRate: Number(form.depreciationRate),
+          lifespan: Number(form.lifespan),
+          parentCategoryId: form.parentCategoryId || null,
+        },
+      })
+      setForm({ name: '', description: '', depreciationRate: 15, lifespan: 5, parentCategoryId: '', status: 'Active' })
+      setShowAdd(false)
+      showToast('Category added successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to add category', 'error')
+    }
   }
 
   const handleEditClick = (cat: Category) => {
+    const rawCat = categories?.find((c) => c.id === cat.id)
     setEditingItem(cat)
     setEditForm({
       name: cat.name,
       description: cat.description,
+      depreciationRate: cat.depreciationRate,
+      lifespan: cat.lifespan,
+      parentCategoryId: rawCat?.customAttributes?.parentCategoryId ?? '',
       status: cat.status,
     })
   }
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingItem || !editForm.name.trim()) return
-    setRows((prev) =>
-      prev.map((r) =>
-        r.id === editingItem.id
-          ? { ...r, name: editForm.name, description: editForm.description, status: editForm.status }
-          : r
-      )
-    )
-    setEditingItem(null)
-    showToast('Category updated successfully')
+
+    try {
+      await updateMutation.mutateAsync({
+        id: editingItem.id,
+        data: {
+          name: editForm.name.trim(),
+          customAttributes: {
+            description: editForm.description.trim(),
+            status: editForm.status as 'Active' | 'Inactive',
+            depreciationRate: Number(editForm.depreciationRate),
+            lifespan: Number(editForm.lifespan),
+            parentCategoryId: editForm.parentCategoryId || null,
+          },
+        },
+      })
+      setEditingItem(null)
+      showToast('Category updated successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update category', 'error')
+    }
   }
 
-  const handleDelete = (id: string) => {
-    setRows((prev) => prev.filter((r) => r.id !== id))
-    showToast('Category removed', 'error')
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+      showToast('Category removed successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete category', 'error')
+    }
   }
+
+  if (isLoading) return <SkeletonTable />
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <SearchBar value={search} onChange={setSearch} placeholder="Search categories…" />
-        <button
-          id="add-category-btn"
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150"
-        >
-          <Plus className="w-4 h-4" />
-          Add Category
-        </button>
+        {!isReadOnly && (
+          <button
+            id="add-category-btn"
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150"
+          >
+            <Plus className="w-4 h-4" />
+            Add Category
+          </button>
+        )}
       </div>
 
       <div className="rounded-xl border border-white/8 overflow-hidden">
@@ -557,7 +701,8 @@ function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success
               <tr className="border-b border-white/8 bg-white/3">
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Category</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Description</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Assets</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Deprec. Rate</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Lifespan</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Status</th>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold text-white/40 uppercase tracking-wider">Actions</th>
               </tr>
@@ -565,7 +710,7 @@ function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success
             <tbody className="divide-y divide-white/5">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-sm text-white/30">
+                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-white/30">
                     No categories found.
                   </td>
                 </tr>
@@ -573,30 +718,29 @@ function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success
                 filtered.map((cat) => (
                   <tr key={cat.id} className="hover:bg-white/2 transition-colors group">
                     <td className="px-5 py-4 font-medium text-white">{cat.name}</td>
-                    <td className="px-5 py-4 text-white/50">{cat.description}</td>
-                    <td className="px-5 py-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-accent/10 text-accent text-xs font-semibold">
-                        {cat.assetCount}
-                      </span>
-                    </td>
+                    <td className="px-5 py-4 text-white/50">{cat.description || '—'}</td>
+                    <td className="px-5 py-4 text-white/70">{cat.depreciationRate}%</td>
+                    <td className="px-5 py-4 text-white/70">{cat.lifespan} Years</td>
                     <td className="px-5 py-4">
                       <StatusBadge status={cat.status} />
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditClick(cat)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(cat.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                    <td className="px-5 py-4 text-right">
+                      {!isReadOnly && (
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleEditClick(cat)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(cat.id)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -605,10 +749,6 @@ function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success
           </table>
         </div>
       </div>
-
-      <p className="text-xs text-white/25 italic">
-        Categories are used to classify assets and drive reporting filters.
-      </p>
 
       {showAdd && (
         <Modal title="Add Category" onClose={() => setShowAdd(false)}>
@@ -632,19 +772,61 @@ function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success
                 className={inputCls}
               />
             </Field>
-            <Field label="Status">
-              <div className="relative">
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as Status }))}
-                  className={selectCls}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
-              </div>
-            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Depreciation Rate (%)">
+                <input
+                  type="number"
+                  required
+                  min={0}
+                  max={100}
+                  value={form.depreciationRate}
+                  onChange={(e) => setForm((p) => ({ ...p, depreciationRate: Number(e.target.value) }))}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Lifespan (Years)">
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={form.lifespan}
+                  onChange={(e) => setForm((p) => ({ ...p, lifespan: Number(e.target.value) }))}
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Parent Category (optional)">
+                <div className="relative">
+                  <select
+                    value={form.parentCategoryId}
+                    onChange={(e) => setForm((p) => ({ ...p, parentCategoryId: e.target.value }))}
+                    className={selectCls}
+                  >
+                    <option value="">None (Top-Level)</option>
+                    {(categories ?? []).map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                </div>
+              </Field>
+              <Field label="Status">
+                <div className="relative">
+                  <select
+                    value={form.status}
+                    onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
+                    className={selectCls}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                </div>
+              </Field>
+            </div>
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -655,9 +837,10 @@ function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success
               </button>
               <button
                 type="submit"
+                disabled={createMutation.isPending}
                 className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                Add Category
+                {createMutation.isPending ? 'Adding...' : 'Add Category'}
               </button>
             </div>
           </form>
@@ -687,19 +870,63 @@ function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success
                 className={inputCls}
               />
             </Field>
-            <Field label="Status">
-              <div className="relative">
-                <select
-                  value={editForm.status}
-                  onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value as Status }))}
-                  className={selectCls}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
-              </div>
-            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Depreciation Rate (%)">
+                <input
+                  type="number"
+                  required
+                  min={0}
+                  max={100}
+                  value={editForm.depreciationRate}
+                  onChange={(e) => setEditForm((p) => ({ ...p, depreciationRate: Number(e.target.value) }))}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Lifespan (Years)">
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={editForm.lifespan}
+                  onChange={(e) => setEditForm((p) => ({ ...p, lifespan: Number(e.target.value) }))}
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Parent Category (optional)">
+                <div className="relative">
+                  <select
+                    value={editForm.parentCategoryId}
+                    onChange={(e) => setEditForm((p) => ({ ...p, parentCategoryId: e.target.value }))}
+                    className={selectCls}
+                  >
+                    <option value="">None (Top-Level)</option>
+                    {(categories ?? [])
+                      .filter((cat) => cat.id !== editingItem.id)
+                      .map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                </div>
+              </Field>
+              <Field label="Status">
+                <div className="relative">
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
+                    className={selectCls}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                </div>
+              </Field>
+            </div>
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -710,9 +937,10 @@ function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success
               </button>
               <button
                 type="submit"
+                disabled={updateMutation.isPending}
                 className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                Save Changes
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </form>
@@ -724,102 +952,205 @@ function CategoriesTab({ showToast }: { showToast: (msg: string, type?: 'success
 
 /* ─── EMPLOYEES TAB ────────────────────────────────────────────────────────── */
 
-function EmployeesTab({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) {
-  const [rows, setRows] = useState<Employee[]>(SEED_EMPLOYEES)
+function EmployeesTab({
+  showToast,
+  isReadOnly,
+}: {
+  showToast: (msg: string, type?: 'success' | 'error') => void
+  isReadOnly: boolean
+}) {
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
-  const [editingItem, setEditingItem] = useState<Employee | null>(null)
+  const [editingEmployee, setEditingEmployee] = useState<EmployeeRow | null>(null)
 
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
-    department: '',
-    role: 'Employee',
-    status: 'Active' as Status,
+    roleId: '',
+    departmentId: '',
+    designation: '',
+    phone: '',
   })
 
   const [editForm, setEditForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    department: '',
-    role: 'Employee',
-    status: 'Active' as Status,
+    designation: '',
+    departmentId: '',
+    phone: '',
+    isActive: true,
   })
 
-  const filtered = rows.filter(
+  // Hooks
+  const { data: employees, isLoading: employeesLoading } = useEmployees()
+  const { data: invitations, isLoading: invitesLoading } = useInvitations()
+  const { data: depts } = useDepartments()
+  const { data: roles } = useRoles()
+
+  const inviteMutation = useInviteEmployee()
+  const resendMutation = useResendInvitation()
+  const cancelInviteMutation = useDeleteInvitation()
+  const updateEmployeeMutation = useUpdateEmployee()
+  const deleteEmployeeMutation = useDeleteEmployee()
+
+  // Assemble list mapping database values to Employees Setup workflow
+  const employeeRows: EmployeeRow[] = (employees ?? []).map((emp) => ({
+    type: 'member',
+    id: emp.id,
+    name: emp.user.name,
+    email: emp.user.email,
+    department: emp.department?.name ?? '—',
+    departmentId: emp.departmentId ?? '',
+    designation: emp.designation ?? '—',
+    role: emp.user.role?.name ?? 'Employee',
+    roleId: emp.user.roleId ?? '',
+    status: emp.isActive ? 'Accepted' : 'Inactive',
+    joinedDate: new Date(emp.createdAt).toLocaleDateString(),
+    lastSent: '—',
+    phone: emp.phone ?? '',
+    isActive: emp.isActive,
+  }))
+
+  const inviteRows: EmployeeRow[] = (invitations ?? [])
+    .filter((inv) => !inv.accepted)
+    .map((inv) => {
+      let status = 'Pending Invitation'
+      if (new Date() > new Date(inv.expiresAt)) {
+        status = 'Expired'
+      }
+      const resolvedDeptName = depts?.find((d) => d.id === inv.departmentId)?.name ?? '—'
+      return {
+        type: 'invite',
+        id: inv.id,
+        name: inv.name ?? '—',
+        email: inv.email,
+        department: resolvedDeptName,
+        departmentId: inv.departmentId ?? '',
+        designation: inv.designation ?? '—',
+        role: inv.role.name,
+        roleId: inv.roleId,
+        status,
+        joinedDate: '—',
+        lastSent: new Date(inv.createdAt).toLocaleDateString(),
+        phone: inv.phone ?? '',
+        token: inv.token,
+      }
+    })
+
+  const combinedRows = [...employeeRows, ...inviteRows]
+
+  const filtered = combinedRows.filter(
     (r) =>
-      `${r.firstName} ${r.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
+      r.name.toLowerCase().includes(search.toLowerCase()) ||
       r.email.toLowerCase().includes(search.toLowerCase()) ||
-      r.department.toLowerCase().includes(search.toLowerCase()),
+      r.department.toLowerCase().includes(search.toLowerCase()) ||
+      r.designation.toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.firstName.trim() || !form.email.trim()) return
-    setRows((prev) => [
-      ...prev,
-      { id: uid(), ...form },
-    ])
-    setForm({ firstName: '', lastName: '', email: '', department: '', role: 'Employee', status: 'Active' })
-    setShowAdd(false)
-    showToast('Employee added successfully')
+    if (!form.email.trim() || !form.roleId) return
+
+    try {
+      await inviteMutation.mutateAsync({
+        email: form.email.trim(),
+        roleId: form.roleId,
+        name: form.name.trim() || undefined,
+        designation: form.designation.trim() || undefined,
+        departmentId: form.departmentId || undefined,
+        phone: form.phone.trim() || undefined,
+      })
+      setForm({ name: '', email: '', roleId: '', departmentId: '', designation: '', phone: '' })
+      setShowAdd(false)
+      showToast('Invitation enqueued and email sent successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to send invitation', 'error')
+    }
   }
 
-  const handleEditClick = (emp: Employee) => {
-    setEditingItem(emp)
+  const handleResend = async (id: string) => {
+    try {
+      await resendMutation.mutateAsync(id)
+      showToast('Invitation resent successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to resend invitation', 'error')
+    }
+  }
+
+  const handleCopyLink = (token: string) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+    const link = `${origin}/auth/accept-invite?token=${token}`
+    navigator.clipboard.writeText(link)
+    showToast('Invitation link copied')
+  }
+
+  const handleCancelInvite = async (id: string) => {
+    try {
+      await cancelInviteMutation.mutateAsync(id)
+      showToast('Invitation cancelled successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to cancel invitation', 'error')
+    }
+  }
+
+  const handleEditClick = (emp: EmployeeRow) => {
+    setEditingEmployee(emp)
     setEditForm({
-      firstName: emp.firstName,
-      lastName: emp.lastName,
-      email: emp.email,
-      department: emp.department,
-      role: emp.role,
-      status: emp.status,
+      designation: emp.designation === '—' ? '' : emp.designation,
+      departmentId: emp.departmentId ?? '',
+      phone: emp.phone,
+      isActive: emp.isActive ?? true,
     })
   }
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editingItem || !editForm.firstName.trim() || !editForm.email.trim()) return
-    setRows((prev) =>
-      prev.map((r) =>
-        r.id === editingItem.id
-          ? {
-              ...r,
-              firstName: editForm.firstName,
-              lastName: editForm.lastName,
-              email: editForm.email,
-              department: editForm.department,
-              role: editForm.role,
-              status: editForm.status,
-            }
-          : r
-      )
-    )
-    setEditingItem(null)
-    showToast('Employee updated successfully')
+    if (!editingEmployee) return
+
+    try {
+      await updateEmployeeMutation.mutateAsync({
+        id: editingEmployee.id,
+        data: {
+          designation: editForm.designation.trim() || null,
+          departmentId: editForm.departmentId || null,
+          phone: editForm.phone.trim() || null,
+          isActive: editForm.isActive,
+        },
+      })
+      setEditingEmployee(null)
+      showToast('Employee profile updated successfully')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update employee', 'error')
+    }
   }
 
-  const handleDelete = (id: string) => {
-    setRows((prev) => prev.filter((r) => r.id !== id))
-    showToast('Employee removed', 'error')
+  const handleRemoveMember = async (id: string) => {
+    try {
+      await deleteEmployeeMutation.mutateAsync(id)
+      showToast('Member removed from organization', 'success')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to remove member', 'error')
+    }
   }
+
+  if (employeesLoading || invitesLoading) return <SkeletonTable />
 
   return (
     <div className="space-y-4">
+      {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <SearchBar value={search} onChange={setSearch} placeholder="Search employees…" />
-        <button
-          id="add-employee-btn"
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150"
-        >
-          <Plus className="w-4 h-4" />
-          Add Employee
-        </button>
+        {!isReadOnly && (
+          <button
+            id="add-employee-btn"
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150"
+          >
+            <Plus className="w-4 h-4" />
+            Add Employee
+          </button>
+        )}
       </div>
 
+      {/* Table */}
       <div className="rounded-xl border border-white/8 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -830,14 +1161,15 @@ function EmployeesTab({ showToast }: { showToast: (msg: string, type?: 'success'
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Department</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Role</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Joined / Sent</th>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold text-white/40 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-white/30">
-                    No employees found.
+                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-white/30">
+                    No employees or invites found.
                   </td>
                 </tr>
               ) : (
@@ -846,9 +1178,12 @@ function EmployeesTab({ showToast }: { showToast: (msg: string, type?: 'success'
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center text-xs font-bold text-accent shrink-0">
-                          {emp.firstName[0]}{emp.lastName[0]}
+                          {emp.name[0] ?? 'E'}
                         </div>
-                        <span className="font-medium text-white">{emp.firstName} {emp.lastName}</span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-white truncate">{emp.name}</p>
+                          <p className="text-[11px] text-white/40 truncate">{emp.designation}</p>
+                        </div>
                       </div>
                     </td>
                     <td className="px-5 py-4 text-white/60">{emp.email}</td>
@@ -861,21 +1196,58 @@ function EmployeesTab({ showToast }: { showToast: (msg: string, type?: 'success'
                     <td className="px-5 py-4">
                       <StatusBadge status={emp.status} />
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditClick(emp)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(emp.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                    <td className="px-5 py-4 text-white/50 text-xs">
+                      {emp.status === 'Accepted' ? emp.joinedDate : emp.lastSent}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      {!isReadOnly && (
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {emp.type === 'invite' ? (
+                            <>
+                              <button
+                                onClick={() => handleResend(emp.id)}
+                                className="px-2 py-1 rounded text-[11px] font-semibold text-accent hover:bg-accent/10 transition-colors"
+                                title="Resend Invite"
+                              >
+                                Resend
+                              </button>
+                              {emp.token && (
+                                <button
+                                  onClick={() => handleCopyLink(emp.token!)}
+                                  className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
+                                  title="Copy Link"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleCancelInvite(emp.id)}
+                                className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                title="Cancel Invite"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleEditClick(emp)}
+                                className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
+                                title="Edit Employee"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleRemoveMember(emp.id)}
+                                className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                title="Remove From Workspace"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -885,35 +1257,19 @@ function EmployeesTab({ showToast }: { showToast: (msg: string, type?: 'success'
         </div>
       </div>
 
-      <p className="text-xs text-white/25 italic">
-        Employees listed here can be assigned assets and appear in allocation picklists.
-      </p>
-
       {/* Add Modal */}
       {showAdd && (
-        <Modal title="Add Employee" onClose={() => setShowAdd(false)}>
-          <form onSubmit={handleAdd} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="First Name">
-                <input
-                  type="text"
-                  required
-                  placeholder="Jane"
-                  value={form.firstName}
-                  onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Last Name">
-                <input
-                  type="text"
-                  placeholder="Smith"
-                  value={form.lastName}
-                  onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-                  className={inputCls}
-                />
-              </Field>
-            </div>
+        <Modal title="Invite Employee" onClose={() => setShowAdd(false)}>
+          <form onSubmit={handleInviteSubmit} className="space-y-4">
+            <Field label="Full Name">
+              <input
+                type="text"
+                placeholder="Jane Smith"
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                className={inputCls}
+              />
+            </Field>
             <Field label="Work Email">
               <input
                 type="email"
@@ -924,45 +1280,61 @@ function EmployeesTab({ showToast }: { showToast: (msg: string, type?: 'success'
                 className={inputCls}
               />
             </Field>
-            <Field label="Department">
+            <Field label="Phone (optional)">
               <input
-                type="text"
-                placeholder="e.g. Engineering"
-                value={form.department}
-                onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))}
+                type="tel"
+                placeholder="+1 555-0100"
+                value={form.phone}
+                onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
                 className={inputCls}
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Role">
+              <Field label="Organization Role">
                 <div className="relative">
                   <select
-                    value={form.role}
-                    onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
+                    required
+                    value={form.roleId}
+                    onChange={(e) => setForm((p) => ({ ...p, roleId: e.target.value }))}
                     className={selectCls}
                   >
-                    <option>Employee</option>
-                    <option>Manager</option>
-                    <option>Administrator</option>
-                    <option>Auditor</option>
+                    <option value="">Select Role</option>
+                    {(roles ?? []).map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
                 </div>
               </Field>
-              <Field label="Status">
+              <Field label="Department (optional)">
                 <div className="relative">
                   <select
-                    value={form.status}
-                    onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as Status }))}
+                    value={form.departmentId}
+                    onChange={(e) => setForm((p) => ({ ...p, departmentId: e.target.value }))}
                     className={selectCls}
                   >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="">None</option>
+                    {(depts ?? []).map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
                 </div>
               </Field>
             </div>
+            <Field label="Designation / Job Title">
+              <input
+                type="text"
+                placeholder="e.g. Lead Frontend Architect"
+                value={form.designation}
+                onChange={(e) => setForm((p) => ({ ...p, designation: e.target.value }))}
+                className={inputCls}
+              />
+            </Field>
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -973,9 +1345,10 @@ function EmployeesTab({ showToast }: { showToast: (msg: string, type?: 'success'
               </button>
               <button
                 type="submit"
+                disabled={inviteMutation.isPending}
                 className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                Add Employee
+                {inviteMutation.isPending ? 'Sending...' : 'Invite Employee'}
               </button>
             </div>
           </form>
@@ -983,92 +1356,72 @@ function EmployeesTab({ showToast }: { showToast: (msg: string, type?: 'success'
       )}
 
       {/* Edit Modal */}
-      {editingItem && (
-        <Modal title="Edit Employee" onClose={() => setEditingItem(null)}>
+      {editingEmployee && (
+        <Modal title="Edit Employee Profile" onClose={() => setEditingEmployee(null)}>
           <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="First Name">
-                <input
-                  type="text"
-                  required
-                  placeholder="Jane"
-                  value={editForm.firstName}
-                  onChange={(e) => setEditForm((p) => ({ ...p, firstName: e.target.value }))}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Last Name">
-                <input
-                  type="text"
-                  placeholder="Smith"
-                  value={editForm.lastName}
-                  onChange={(e) => setEditForm((p) => ({ ...p, lastName: e.target.value }))}
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-            <Field label="Work Email">
+            <Field label="Designation / Job Title">
               <input
-                type="email"
+                type="text"
                 required
-                placeholder="jane@acme.com"
-                value={editForm.email}
-                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                placeholder="e.g. Senior Developer"
+                value={editForm.designation}
+                onChange={(e) => setEditForm((p) => ({ ...p, designation: e.target.value }))}
                 className={inputCls}
               />
             </Field>
             <Field label="Department">
+              <div className="relative">
+                <select
+                  value={editForm.departmentId}
+                  onChange={(e) => setEditForm((p) => ({ ...p, departmentId: e.target.value }))}
+                  className={selectCls}
+                >
+                  <option value="">No Department</option>
+                  {(depts ?? []).map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+              </div>
+            </Field>
+            <Field label="Phone">
               <input
-                type="text"
-                placeholder="e.g. Engineering"
-                value={editForm.department}
-                onChange={(e) => setEditForm((p) => ({ ...p, department: e.target.value }))}
+                type="tel"
+                placeholder="+1 555-0100"
+                value={editForm.phone}
+                onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
                 className={inputCls}
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Role">
-                <div className="relative">
-                  <select
-                    value={editForm.role}
-                    onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
-                    className={selectCls}
-                  >
-                    <option>Employee</option>
-                    <option>Manager</option>
-                    <option>Administrator</option>
-                    <option>Auditor</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
-                </div>
-              </Field>
-              <Field label="Status">
-                <div className="relative">
-                  <select
-                    value={editForm.status}
-                    onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value as Status }))}
-                    className={selectCls}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
-                </div>
-              </Field>
-            </div>
+            <Field label="Status">
+              <div className="relative">
+                <select
+                  value={editForm.isActive ? 'Active' : 'Inactive'}
+                  onChange={(e) => setEditForm((p) => ({ ...p, isActive: e.target.value === 'Active' }))}
+                  className={selectCls}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+              </div>
+            </Field>
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setEditingItem(null)}
+                onClick={() => setEditingEmployee(null)}
                 className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
+                disabled={updateEmployeeMutation.isPending}
                 className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                Save Changes
+                {updateEmployeeMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </form>
@@ -1080,7 +1433,7 @@ function EmployeesTab({ showToast }: { showToast: (msg: string, type?: 'success'
 
 /* ─── TABS CONFIG ──────────────────────────────────────────────────────────── */
 
-const TABS: { id: Tab; label: string; icon: React.ElementType; count?: number }[] = [
+const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'departments', label: 'Departments', icon: Building2 },
   { id: 'categories',  label: 'Categories',  icon: Tag },
   { id: 'employees',   label: 'Employees',   icon: Users },
@@ -1094,6 +1447,14 @@ export default function DashboardSetupPage() {
   const [activeTab, setActiveTab] = useState<Tab>('departments')
   const [activeOrgName, setActiveOrgName] = useState<string | null>(null)
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' })
+
+  // Query session role for RBAC
+  const { data: sessionData } = useSession()
+  const { data: memberships } = useOrganizations()
+  const activeMembership = memberships?.find((m) => m.isActive)
+  const userRole = activeMembership?.role?.roleType ?? 'EMPLOYEE'
+
+  const isReadOnly = userRole === 'EMPLOYEE' || userRole === 'AUDITOR' || userRole === 'TECHNICIAN'
 
   useEffect(() => {
     setActiveOrgName(sessionStorage.getItem(ACTIVE_ORG_NAME_KEY))
@@ -1113,9 +1474,14 @@ export default function DashboardSetupPage() {
       <div className="space-y-1">
         <h2 className="text-2xl font-bold text-white tracking-tight">Organisation Setup</h2>
         <p className="text-sm text-white/40">
-          {activeOrgName
-            ? <>Configure departments, asset categories, and employees for <span className="text-white/70 font-medium">{activeOrgName}</span>.</>
-            : 'Configure departments, asset categories, and employee directory for your organisation.'}
+          {activeOrgName ? (
+            <>
+              Configure departments, asset categories, and employees for{' '}
+              <span className="text-white/70 font-medium">{activeOrgName}</span>.
+            </>
+          ) : (
+            'Configure departments, asset categories, and employee directory for your organisation.'
+          )}
         </p>
       </div>
 
@@ -1144,9 +1510,9 @@ export default function DashboardSetupPage() {
 
       {/* Tab content */}
       <div>
-        {activeTab === 'departments' && <DepartmentsTab showToast={showToast} />}
-        {activeTab === 'categories'  && <CategoriesTab  showToast={showToast} />}
-        {activeTab === 'employees'   && <EmployeesTab   showToast={showToast} />}
+        {activeTab === 'departments' && <DepartmentsTab showToast={showToast} isReadOnly={isReadOnly} />}
+        {activeTab === 'categories'  && <CategoriesTab  showToast={showToast} isReadOnly={isReadOnly} />}
+        {activeTab === 'employees'   && <EmployeesTab   showToast={showToast} isReadOnly={isReadOnly} />}
       </div>
 
       {/* Toast */}

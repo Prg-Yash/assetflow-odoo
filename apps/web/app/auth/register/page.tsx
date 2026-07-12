@@ -55,7 +55,7 @@ export default function RegisterPage() {
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
-        callbackURL: '/dashboard/overview',
+        callbackURL: '/dashboard',
       })
       setStep('success')
     } catch (err) {

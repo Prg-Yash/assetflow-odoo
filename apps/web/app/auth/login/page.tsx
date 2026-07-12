@@ -51,9 +51,9 @@ export default function LoginPage() {
     setLoading(true)
     const requestedCallback =
       typeof window === 'undefined'
-        ? '/dashboard/overview'
-        : new URLSearchParams(window.location.search).get('callbackURL') || '/dashboard/overview'
-    const callbackURL = requestedCallback.startsWith('/') ? requestedCallback : '/dashboard/overview'
+        ? '/dashboard'
+        : new URLSearchParams(window.location.search).get('callbackURL') || '/dashboard'
+    const callbackURL = requestedCallback.startsWith('/') ? requestedCallback : '/dashboard'
 
     try {
       await submitAuth('/sign-in/email', {

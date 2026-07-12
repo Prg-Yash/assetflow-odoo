@@ -86,6 +86,10 @@ export const createInvite = async (
       throw new ApiError(404, "Role not found in organization");
     }
 
+    if (role.roleType === "ADMIN") {
+      throw new ApiError(403, "Inviting workspace administrators is not allowed.");
+    }
+
     const org = await db.organization.findUnique({
       where: { id: organizationId },
     });
@@ -161,8 +165,14 @@ export const acceptInvite = async (
       include: { role: true },
     });
 
-    if (!invite || invite.accepted) {
-      throw new ApiError(400, "Invalid or already accepted invite token");
+    console.log("[acceptInvite] Received token to verify:", token);
+
+    if (!invite) {
+      throw new ApiError(400, `Invite token not found: ${token}`);
+    }
+
+    if (invite.accepted) {
+      throw new ApiError(400, "This invitation has already been accepted");
     }
 
     if (new Date() > invite.expiresAt) {

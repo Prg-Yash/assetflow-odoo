@@ -1299,11 +1299,13 @@ function EmployeesTab({
                     className={selectCls}
                   >
                     <option value="">Select Role</option>
-                    {(roles ?? []).map((role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.name}
-                      </option>
-                    ))}
+                    {(roles ?? [])
+                      .filter((r) => r.roleType !== 'ADMIN')
+                      .map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.name}
+                        </option>
+                      ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
                 </div>

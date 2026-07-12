@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Package, Eye, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Package, Eye, CheckCircle2, ChevronLeft, ChevronRight, Download, Smartphone, ShieldCheck } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface StepDef {
@@ -11,7 +11,7 @@ interface StepDef {
   hint: string
 }
 
-const STEPS: StepDef[] = [
+const WORKFLOW_STEPS: StepDef[] = [
   {
     key: 'register',
     title: 'Register',
@@ -35,19 +35,46 @@ const STEPS: StepDef[] = [
   },
 ]
 
+const MOBILE_APP_STEPS: StepDef[] = [
+  {
+    key: 'download',
+    title: 'Download',
+    icon: Download,
+    desc: 'Download the APK and install AssetFlow on your Android device in a few taps.',
+    hint: 'APK ready for install.',
+  },
+  {
+    key: 'install',
+    title: 'Install',
+    icon: Smartphone,
+    desc: 'Allow the app to open securely and grant the permissions needed for field work.',
+    hint: 'Mobile access enabled.',
+  },
+  {
+    key: 'sync',
+    title: 'Sync',
+    icon: ShieldCheck,
+    desc: 'Keep work orders, approvals, and asset updates synced while your team is on the move.',
+    hint: 'Data stays in sync.',
+  },
+]
+
 export function PhoneFlowDemo({
   intervalMs = 4200,
   staticStep,
   showArrows = true,
   sectionActive,
+  variant = 'workflow',
 }: {
   intervalMs?: number
   staticStep?: string
   showArrows?: boolean
   sectionActive?: boolean
+  variant?: 'workflow' | 'mobile-app'
 }) {
   const [index, setIndex] = useState(0)
-  const staticIndex = staticStep ? Math.max(0, STEPS.findIndex((s) => s.key === staticStep)) : null
+  const steps = variant === 'mobile-app' ? MOBILE_APP_STEPS : WORKFLOW_STEPS
+  const staticIndex = staticStep ? Math.max(0, steps.findIndex((s) => s.key === staticStep)) : null
   const [flash, setFlash] = useState(false)
 
   useEffect(() => {
@@ -62,16 +89,16 @@ export function PhoneFlowDemo({
 
   useEffect(() => {
     if (staticIndex !== null) return
-    const id = setInterval(() => setIndex((i) => (i + 1) % STEPS.length), intervalMs)
+    const id = setInterval(() => setIndex((i) => (i + 1) % steps.length), intervalMs)
     return () => clearInterval(id)
-  }, [intervalMs, staticIndex])
+  }, [intervalMs, staticIndex, steps.length])
 
-  const active = ((staticIndex !== null && staticIndex !== -1 ? STEPS[staticIndex] : STEPS[index]) || STEPS[0]) as StepDef
+  const active = ((staticIndex !== null && staticIndex !== -1 ? steps[staticIndex] : steps[index]) || steps[0]) as StepDef
 
   return (
     <div className="w-full flex items-center justify-center">
       {/* Outer scalable wrapper for responsiveness */}
-      <div className="[--phone-w:240px] sm:[--phone-w:280px] md:[--phone-w:300px] lg:[--phone-w:300px] xl:[--phone-w:320px] [--phone-h:420px] sm:[--phone-h:480px] md:[--phone-h:550px] lg:[--phone-h:550px] xl:[--phone-h:580px]">
+      <div className="[--phone-w:300px] sm:[--phone-w:300px] md:[--phone-w:300px] lg:[--phone-w:300px] xl:[--phone-w:320px] [--phone-h:520px] sm:[--phone-h:550px] md:[--phone-h:550px] lg:[--phone-h:550px] xl:[--phone-h:580px]">
         {/* Phone shell */}
         <div className="relative mx-auto" style={{ width: 'var(--phone-w)', height: 'var(--phone-h)' }}>
           {/* Bezel / body */}
@@ -94,7 +121,7 @@ export function PhoneFlowDemo({
             </div>
             {/* Step pills (inside screen) */}
             <div className="flex items-center justify-between gap-1 text-[10px] font-medium mb-3">
-              {STEPS.map((s, i) => {
+              {steps.map((s, i) => {
                 const Icon = s.icon
                 const on = s.key === active.key
                 return (
@@ -121,7 +148,7 @@ export function PhoneFlowDemo({
               <>
                 <button
                   type="button"
-                  onClick={() => setIndex((i) => (i - 1 + STEPS.length) % STEPS.length)}
+                  onClick={() => setIndex((i) => (i - 1 + steps.length) % steps.length)}
                   className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border bg-background/70 text-foreground flex items-center justify-center text-xs hover:bg-muted transition"
                   aria-label="Previous step"
                 >
@@ -129,7 +156,7 @@ export function PhoneFlowDemo({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIndex((i) => (i + 1) % STEPS.length)}
+                  onClick={() => setIndex((i) => (i + 1) % steps.length)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border bg-background/70 text-foreground flex items-center justify-center text-xs hover:bg-muted transition"
                   aria-label="Next step"
                 >
@@ -153,7 +180,7 @@ export function PhoneFlowDemo({
             {/* Progress dots only in auto mode */}
             {staticIndex === null && (
               <div className="mt-3 flex items-center justify-center gap-2">
-                {STEPS.map((s, i) => {
+                {steps.map((s, i) => {
                   const on = i === index
                   return (
                     <span

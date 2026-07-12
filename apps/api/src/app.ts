@@ -10,7 +10,22 @@ const app = express();
 // Enable CORS with credentials support for session cookies
 app.use(
   cors({
-    origin: config.corsOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl) and known origins
+      const allowed = [
+        config.corsOrigin,
+        'http://localhost:3000',
+        'http://localhost:5001',
+        'https://lr2.aryanshinde.in',
+        'https://jeanene-unexposed-ingrid.ngrok-free.dev',
+      ];
+      if (!origin || allowed.includes(origin) || origin.endsWith('.ngrok-free.app') || origin.endsWith('.ngrok.io')) {
+        callback(null, true);
+      } else {
+        // Allow in development; restrict in prod if needed
+        callback(null, true);
+      }
+    },
     credentials: true,
   })
 );

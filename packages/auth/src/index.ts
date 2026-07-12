@@ -9,11 +9,7 @@ export const auth = betterAuth({
   }),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5001",
   basePath: "/api/v1/auth",
-  trustedOrigins: [
-    process.env.CORS_ORIGIN || "http://localhost:3000",
-    "http://localhost:3000",
-    "http://localhost:5001",
-  ],
+  trustedOrigins: ["*"],
   user: {
     additionalFields: {
       organizationId: {

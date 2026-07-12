@@ -13,7 +13,7 @@
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.1.18",
     "@repo/db": "*",
-    "better-auth": "^1.1.18",
+    "better-auth": "1.1.18",
     "dotenv": "^16.4.7",
     "nodemailer": "^6.9.16"
   },

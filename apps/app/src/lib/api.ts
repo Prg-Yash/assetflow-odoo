@@ -61,6 +61,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
   const orgId = await getActiveOrgId();
 
   const headers = new Headers(options.headers || {});
+  // Skip ngrok browser warning interstitial
   headers.set('ngrok-skip-browser-warning', 'true');
 
   // Only set JSON content-type when not uploading files

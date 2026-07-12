@@ -12,6 +12,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
+import { submitAuth } from '../auth-api'
 
 const FEATURES = [
   { icon: Package, label: 'Full asset lifecycle management' },
@@ -24,6 +25,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'form' | 'success'>('form')
+  const [error, setError] = useState('')
 
   const [form, setForm] = useState({ name: '', email: '', password: '' })
 
@@ -32,10 +34,21 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1800))
-    setLoading(false)
-    setStep('success')
+    try {
+      await submitAuth('/sign-up/email', {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        callbackURL: '/dashboard/overview',
+      })
+      setStep('success')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create account. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -165,6 +178,12 @@ export default function RegisterPage() {
 
                 {/* Form */}
                 <form id="register-form" onSubmit={handleSubmit} className="space-y-4" noValidate>
+                  {error && (
+                    <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                      {error}
+                    </div>
+                  )}
+
                   {/* Full name */}
                   <div className="space-y-1.5">
                     <label htmlFor="reg-name" className="block text-xs font-medium text-white/60">

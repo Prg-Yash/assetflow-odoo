@@ -4,17 +4,17 @@
   display: grid;
   gap: 20px;
   background:
-    radial-gradient(circle at top left, rgba(255, 101, 0, 0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(15, 118, 110, 0.1), transparent 24%),
+    radial-gradient(circle at top left, hsl(var(--primary-soft)), transparent 28%),
+    radial-gradient(circle at top right, hsl(var(--secondary) / 0.1), transparent 24%),
     var(--background);
 }
 
 .hero,
 .section,
 .panel {
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 24px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  background: hsl(var(--surface) / 0.88);
   backdrop-filter: blur(16px);
   box-shadow: var(--shadow);
 }
@@ -37,8 +37,8 @@
   width: fit-content;
   padding: 8px 14px;
   border-radius: 999px;
-  background: var(--primary-soft);
-  color: var(--primary);
+  background: hsl(var(--primary-soft));
+  color: hsl(var(--primary));
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -55,7 +55,7 @@
   max-width: 60ch;
   font-size: 1.05rem;
   line-height: 1.7;
-  color: var(--muted);
+  color: hsl(var(--muted-foreground));
 }
 
 .ctas {
@@ -83,13 +83,13 @@
 }
 
 .primary {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
 }
 
 .secondary {
-  background: var(--surface);
-  border-color: var(--border);
+  background: hsl(var(--surface));
+  border-color: hsl(var(--border));
 }
 
 .main {
@@ -104,7 +104,7 @@
 .heroPanel {
   padding: 20px;
   border-radius: 20px;
-  background: var(--surface-2);
+  background: hsl(var(--surface-2));
   display: grid;
   gap: 14px;
 }
@@ -120,8 +120,8 @@
 .featureCard,
 .workflowStep,
 .ctaBanner {
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--surface));
   border-radius: 18px;
 }
 
@@ -136,7 +136,7 @@
 }
 
 .metricCard span {
-  color: var(--muted);
+  color: hsl(var(--muted-foreground));
 }
 
 .heroPreview {
@@ -150,7 +150,7 @@
 .featureCard p,
 .workflowStep p,
 .ctaBanner p {
-  color: var(--muted);
+  color: hsl(var(--muted-foreground));
   line-height: 1.6;
 }
 
@@ -163,8 +163,8 @@
 .heroPreview span {
   padding: 10px 12px;
   border-radius: 999px;
-  background: var(--primary-soft);
-  color: var(--primary);
+  background: hsl(var(--primary-soft));
+  color: hsl(var(--primary));
   font-size: 0.92rem;
 }
 
@@ -215,8 +215,8 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: var(--primary-soft);
-  color: var(--primary);
+  background: hsl(var(--primary-soft));
+  color: hsl(var(--primary));
   font-weight: 700;
 }
 
@@ -244,8 +244,8 @@
   gap: 6px;
   padding: 18px;
   border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--surface) / 0.6);
 }
 
 .card span {
@@ -253,7 +253,7 @@
 }
 
 .card small {
-  color: var(--muted);
+  color: hsl(var(--muted-foreground));
   font-family: var(--font-poppins), sans-serif;
 }
 
@@ -270,8 +270,8 @@
 
   .secondary:hover,
   .card:hover {
-    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
-    background: color-mix(in srgb, var(--surface) 92%, var(--primary-soft));
+    border-color: hsl(24 100% 40% / 0.35);
+    background: hsl(var(--surface) / 0.92);
   }
 }
 

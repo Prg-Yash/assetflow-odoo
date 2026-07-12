@@ -2,6 +2,7 @@ import { Router } from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "@repo/auth";
 import healthRouter from "./health.route.js";
+import mediaRouter from "./media.route.js";
 import protectedRouter from "./protected.route.js";
 
 const router = Router();
@@ -17,6 +18,7 @@ router.all("/auth/*", (req, res) => {
 
 // Register sub-routers
 router.use("/health", healthRouter);
+router.use("/media", mediaRouter);
 router.use("/protected", protectedRouter);
 
 export default router;

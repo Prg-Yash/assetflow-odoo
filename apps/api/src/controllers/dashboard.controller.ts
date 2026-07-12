@@ -98,6 +98,43 @@ export const getOverdueAllocations = async (
   }
 };
 
+export const getUpcomingReturns = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const organizationId = req.organizationId!;
+    const now = new Date();
+
+    const upcoming = await db.allocation.findMany({
+      where: {
+        organizationId,
+        status: "ACTIVE",
+        expectedReturn: { gte: now },
+      },
+      include: {
+        asset: { select: { id: true, assetCode: true, name: true } },
+        employee: {
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            department: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { expectedReturn: "asc" },
+      take: 20,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: upcoming,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getUtilizationReport = async (
   req: AuthRequest,
   res: Response,

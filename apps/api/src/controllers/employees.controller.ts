@@ -127,7 +127,7 @@ export const promoteEmployee = async (
   try {
     const organizationId = req.organizationId!;
     const id = String(req.params.id);
-    const { designation, roleId } = req.body;
+    const { designation, roleId, roleType } = req.body;
 
     if (!designation) {
       throw new ApiError(400, "New designation is required for promotion");
@@ -148,10 +148,28 @@ export const promoteEmployee = async (
         data: { designation: String(designation) },
       });
 
-      if (roleId) {
+      let targetRoleId = roleId ? String(roleId) : null;
+
+      if (!targetRoleId && roleType) {
+        // Automatically find or resolve roleId for DEPARTMENT_HEAD / ASSET_MANAGER / ADMIN
+        const roleRecord = await tx.role.findFirst({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          where: { organizationId, roleType: String(roleType) as any },
+        });
+        if (roleRecord) {
+          targetRoleId = roleRecord.id;
+        }
+      }
+
+      if (targetRoleId) {
         await tx.user.update({
           where: { id: existing.userId },
-          data: { roleId: String(roleId) },
+          data: { roleId: targetRoleId },
+        });
+
+        await tx.organizationMember.updateMany({
+          where: { userId: existing.userId, organizationId },
+          data: { roleId: targetRoleId },
         });
       }
 

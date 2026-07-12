@@ -1,102 +1,152 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
+import Link from "next/link";
+import Navbar from "@repo/ui/navbar";
 import styles from "./page.module.css";
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
-
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
-
-  return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
-
 export default function Home() {
+  const stats = [
+    ["24/7", "asset visibility"],
+    ["9", "core views"],
+    ["1", "shared UI system"],
+  ] as const;
+
+  const features = [
+    ["Fast registration", "Simple onboarding for people, teams, and assets."],
+    ["Transfer controls", "Track allocation, movement, and ownership changes."],
+    ["Audit ready", "Keep records clean for reviews and reporting."],
+  ] as const;
+
+  const views = [
+    ["/dashboard/overview", "Dashboard"],
+    ["/dashboard/setup", "Setup & Assets"],
+    ["/dashboard/transfer", "Transfer"],
+    ["/dashboard/booking", "Booking"],
+    ["/dashboard/maintainence", "Maintenance"],
+    ["/dashboard/audit", "Audit"],
+    ["/dashboard/reports", "Reports"],
+    ["/dashboard/notifications", "Notifications"],
+  ] as const;
+
   return (
     <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+      <Navbar />
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+      <section className={styles.hero}>
+        <div className={styles.heroCopy}>
+          <div className={styles.badge}>AssetFlow platform</div>
+          <h1>One clean place to register, manage, and report on assets.</h1>
+          <p>
+            Built with a simple, modern layout and the orange brand palette you
+            asked for. This landing page is the entry point for all major views.
+          </p>
+
+          <div className={styles.ctas}>
+            <Link href="/register" className={styles.primary}>
+              Start registration
+            </Link>
+            <Link href="/dashboard/overview" className={styles.secondary}>
+              Open dashboard
+            </Link>
+          </div>
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
+
+        <div className={styles.heroPanel}>
+          <div className={styles.heroMetricRow}>
+            {stats.map(([value, label]) => (
+              <div key={label} className={styles.metricCard}>
+                <strong>{value}</strong>
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className={styles.heroPreview}>
+            <p>Dashboard quick actions</p>
+            <div>
+              <span>Register assets</span>
+              <span>Assign ownership</span>
+              <span>Generate reports</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section} id="features">
+        <div className={styles.sectionHeading}>
+          <div className={styles.badge}>What it includes</div>
+          <h2>Simple sections with strong hierarchy and branded orange accents.</h2>
+        </div>
+
+        <div className={styles.featureGrid}>
+          {features.map(([title, description]) => (
+            <article key={title} className={styles.featureCard}>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section} id="workflow">
+        <div className={styles.sectionHeading}>
+          <div className={styles.badge}>Workflow</div>
+          <h2>Everything starts from registration and flows into the dashboard.</h2>
+        </div>
+
+        <div className={styles.workflowList}>
+          <div className={styles.workflowStep}>
+            <span>01</span>
+            <div>
+              <h3>Register</h3>
+              <p>Capture the user or asset entry point at /register.</p>
+            </div>
+          </div>
+          <div className={styles.workflowStep}>
+            <span>02</span>
+            <div>
+              <h3>Manage</h3>
+              <p>Use setup, transfer, booking, and maintenance views.</p>
+            </div>
+          </div>
+          <div className={styles.workflowStep}>
+            <span>03</span>
+            <div>
+              <h3>Review</h3>
+              <p>Finish with audit and reporting screens.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <main className={styles.main}>
+        <div className={styles.panel} id="dashboard">
+          <div className={styles.sectionHeading}>
+            <div className={styles.badge}>Views</div>
+            <h2>Jump into each screen already mapped in the web app.</h2>
+          </div>
+
+          <div className={styles.grid}>
+            {views.map(([href, label]) => (
+              <Link key={href} href={href} className={styles.card}>
+                <span>{label}</span>
+                <small>{href}</small>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <section className={styles.section} id="contact">
+          <div className={styles.ctaBanner}>
+            <div>
+              <div className={styles.badge}>Get started</div>
+              <h2>Ready to start wiring the actual features?</h2>
+              <p>Build the real product views on top of this clean landing page.</p>
+            </div>
+            <Link href="/dashboard/overview" className={styles.primary}>
+              Go to dashboard
+            </Link>
+          </div>
+        </section>
       </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
     </div>
   );
 }

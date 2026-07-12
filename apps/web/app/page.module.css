@@ -1,186 +1,343 @@
 .page {
-  --gray-rgb: 0, 0, 0;
-  --gray-alpha-200: rgba(var(--gray-rgb), 0.08);
-  --gray-alpha-100: rgba(var(--gray-rgb), 0.05);
-
-  --button-primary-hover: #383838;
-  --button-secondary-hover: #f2f2f2;
-
-  display: grid;
-  grid-template-rows: 20px 1fr 20px;
-  align-items: center;
-  justify-items: center;
   min-height: 100svh;
-  padding: 80px;
-  gap: 64px;
-  font-synthesis: none;
+  padding: 24px;
+  display: grid;
+  gap: 20px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 101, 0, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.1), transparent 24%),
+    var(--background);
 }
 
-@media (prefers-color-scheme: dark) {
-  .page {
-    --gray-rgb: 255, 255, 255;
-    --gray-alpha-200: rgba(var(--gray-rgb), 0.145);
-    --gray-alpha-100: rgba(var(--gray-rgb), 0.06);
-
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-  }
+.hero,
+.section,
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
 }
 
-.main {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  grid-row-start: 2;
+.hero {
+  padding: 32px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  align-items: stretch;
+  display: grid;
+  gap: 24px;
 }
 
-.main ol {
-  font-family: var(--font-geist-mono);
-  padding-left: 0;
-  margin: 0;
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: -0.01em;
-  list-style-position: inside;
+.heroCopy {
+  display: grid;
+  gap: 18px;
+  align-content: center;
 }
 
-.main li:not(:last-of-type) {
-  margin-bottom: 8px;
+.badge {
+  width: fit-content;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.main code {
-  font-family: inherit;
-  background: var(--gray-alpha-100);
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-weight: 600;
+.hero h1 {
+  font-size: clamp(2.6rem, 5vw, 5rem);
+  line-height: 1;
+  max-width: 12ch;
+}
+
+.hero p {
+  max-width: 60ch;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--muted);
 }
 
 .ctas {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.primary,
+.secondary,
+.card {
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.primary,
+.secondary {
+  padding: 14px 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.secondary {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.main {
+  display: grid;
+  gap: 20px;
+}
+
+.panel {
+  padding: 28px;
+}
+
+.heroPanel {
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  display: grid;
+  gap: 14px;
+}
+
+.heroMetricRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metricCard,
+.heroPreview,
+.featureCard,
+.workflowStep,
+.ctaBanner {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 18px;
+}
+
+.metricCard {
+  padding: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.metricCard strong {
+  font-size: 1.5rem;
+}
+
+.metricCard span {
+  color: var(--muted);
+}
+
+.heroPreview {
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.heroPreview p,
+.sectionHeading p,
+.featureCard p,
+.workflowStep p,
+.ctaBanner p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.heroPreview div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.heroPreview span {
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.92rem;
+}
+
+.section {
+  padding: 28px;
+}
+
+.sectionHeading {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.sectionHeading h2,
+.ctaBanner h2 {
+  font-size: clamp(1.5rem, 2vw, 2.2rem);
+  line-height: 1.2;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.featureCard {
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.workflowList {
+  display: grid;
+  gap: 12px;
+}
+
+.workflowStep {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: 16px;
+  align-items: start;
 }
 
-.ctas a {
-  appearance: none;
-  border-radius: 128px;
-  height: 48px;
-  padding: 0 20px;
-  font-family: var(--font-geist-sans);
-  border: 1px solid transparent;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
-  cursor: pointer;
+.workflowStep span {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.ctaBanner {
+  padding: 24px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  line-height: 20px;
-  font-weight: 500;
+  justify-content: space-between;
+  gap: 18px;
 }
 
-a.primary {
-  background: var(--foreground);
-  color: var(--background);
-  gap: 8px;
+.panel h2 {
+  font-size: 1.1rem;
+  margin-bottom: 18px;
 }
 
-a.secondary {
-  border-color: var(--gray-alpha-200);
-  min-width: 180px;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
-button.secondary {
-  appearance: none;
-  border-radius: 128px;
-  height: 48px;
-  padding: 0 20px;
-  font-family: var(--font-geist-sans);
-  border: 1px solid transparent;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  line-height: 20px;
-  font-weight: 500;
-  background: transparent;
-  border-color: var(--gray-alpha-200);
-  min-width: 180px;
+.card {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.6);
 }
 
-.footer {
-  font-family: var(--font-geist-sans);
-  grid-row-start: 3;
-  display: flex;
-  gap: 24px;
+.card span {
+  font-weight: 700;
 }
 
-.footer a {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.card small {
+  color: var(--muted);
+  font-family: var(--font-poppins), sans-serif;
 }
 
-.footer img {
-  flex-shrink: 0;
-}
-
-/* Enable hover only on non-touch devices */
 @media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
+  .primary:hover,
+  .secondary:hover,
+  .card:hover {
+    transform: translateY(-2px);
   }
 
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
+  .primary:hover {
+    filter: brightness(0.95);
   }
 
-  .footer a:hover {
-    text-decoration: underline;
-    text-underline-offset: 4px;
+  .secondary:hover,
+  .card:hover {
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+    background: color-mix(in srgb, var(--surface) 92%, var(--primary-soft));
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 960px) {
+  .hero,
+  .ctaBanner {
+    grid-template-columns: 1fr;
+  }
+
+  .featureGrid,
+  .heroMetricRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
   .page {
-    padding: 32px;
-    padding-bottom: 80px;
+    padding: 16px;
   }
 
-  .main {
-    align-items: center;
+  .hero,
+  .panel {
+    padding: 24px;
   }
 
-  .main ol {
-    text-align: center;
+  .section {
+    padding: 22px;
   }
 
-  .ctas {
-    flex-direction: column;
+  .grid {
+    grid-template-columns: 1fr;
   }
 
-  .ctas a {
-    font-size: 14px;
-    height: 40px;
-    padding: 0 16px;
-  }
-
-  a.secondary {
-    min-width: auto;
-  }
-
-  .footer {
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
+  .hero h1 {
+    max-width: none;
   }
 }
 
 @media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
+  .hero,
+  .section,
+  .panel,
+  .secondary,
+  .card,
+  .heroPanel,
+  .metricCard,
+  .heroPreview,
+  .featureCard,
+  .workflowStep,
+  .ctaBanner {
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(148, 163, 184, 0.18);
+  }
+
+  .badge {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .hero p,
+  .heroPreview p,
+  .sectionHeading p,
+  .featureCard p,
+  .workflowStep p,
+  .ctaBanner p,
+  .card small,
+  .metricCard span {
+    color: var(--muted);
   }
 }

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { config } from "./config/index.js";
+import authRouter from "./routes/auth.route.js";
 import routes from "./routes/index.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 
@@ -13,6 +14,9 @@ app.use(
     credentials: true,
   })
 );
+
+// Better Auth needs direct access to the request stream, so mount it before body parsers.
+app.use("/api/v1/auth", authRouter);
 
 // Body parsers
 app.use(express.json());

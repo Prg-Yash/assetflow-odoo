@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getDashboardKPIs,
   getOverdueAllocations,
+  getUpcomingReturns,
   getUtilizationReport,
   getDepartmentAllocationsReport,
   getMaintenanceFrequencyReport,
@@ -14,6 +15,7 @@ router.use(requireOrganization);
 
 router.get("/kpis", getDashboardKPIs);
 router.get("/overdue", getOverdueAllocations);
+router.get("/upcoming", getUpcomingReturns);
 router.get("/reports/utilization", requireRoleType("ADMIN", "ASSET_MANAGER", "DEPARTMENT_HEAD"), getUtilizationReport);
 router.get("/reports/departments", requireRoleType("ADMIN", "ASSET_MANAGER", "DEPARTMENT_HEAD"), getDepartmentAllocationsReport);
 router.get("/reports/maintenance", requireRoleType("ADMIN", "ASSET_MANAGER", "DEPARTMENT_HEAD"), getMaintenanceFrequencyReport);

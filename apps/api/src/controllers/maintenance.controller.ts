@@ -23,6 +23,12 @@ export const getMaintenanceRequests = async (
       ...(priority && { priority }),
     };
 
+    if (req.role?.roleType === "EMPLOYEE" && req.user?.id) {
+      where.raisedById = req.user.id;
+    } else if (req.role?.roleType === "DEPARTMENT_HEAD" && req.employeeProfile?.departmentId) {
+      where.asset = { departmentId: req.employeeProfile.departmentId };
+    }
+
     const requests = await db.maintenanceRequest.findMany({
       where,
       include: {

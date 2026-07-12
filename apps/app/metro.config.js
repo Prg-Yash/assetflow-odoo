@@ -16,4 +16,27 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
+// 3. Handle packages with broken package.json exports/main fields (e.g. react-native-worklets pointing to src/index)
+const fs = require('fs');
+const originalResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'react-native-worklets') {
+    try {
+      const workletsPath = path.resolve(workspaceRoot, 'node_modules/react-native-worklets/lib/module/index.js');
+      if (fs.existsSync(workletsPath)) {
+        return {
+          filePath: workletsPath,
+          type: 'sourceFile',
+        };
+      }
+    } catch (e) {
+      // Fallback to normal resolution
+    }
+  }
+  if (originalResolveRequest) {
+    return originalResolveRequest(context, moduleName, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;

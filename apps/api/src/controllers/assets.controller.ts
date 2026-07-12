@@ -40,6 +40,16 @@ export const getAssets = async (
         department: { select: { id: true, name: true } },
         location: { select: { id: true, name: true } },
         vendor: { select: { id: true, name: true } },
+        allocations: {
+          where: { status: "ACTIVE" },
+          include: {
+            employee: {
+              include: {
+                user: { select: { id: true, name: true, email: true } },
+              },
+            },
+          },
+        },
         _count: { select: { images: true, documents: true, maintenanceRequests: true } },
       },
       orderBy: { createdAt: "desc" },

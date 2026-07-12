@@ -59,10 +59,10 @@ export default function DashboardOverviewPage() {
     <div className="space-y-8 w-full max-w-7xl mx-auto">
       {/* Title */}
       <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-white tracking-tight font-sans">
+        <h2 className="text-2xl font-bold text-foreground tracking-tight font-sans">
           Today&apos;s Overview
         </h2>
-        <p className="text-sm text-white/40">
+        <p className="text-sm text-muted-foreground">
           Real-time snapshot of your organization&apos;s assets, allocations, and requests.
         </p>
       </div>
@@ -70,87 +70,87 @@ export default function DashboardOverviewPage() {
       {/* ─── Metrics Grid (Matches Screen 2 Mockup Layout) ─── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card 1: Available */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 shadow-xl hover:border-accent/30 hover:bg-white/[0.03] transition-all duration-300 group">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xl hover:border-accent/30 hover:bg-muted transition-all duration-300 group">
           <div className="flex justify-between items-start">
-            <p className="text-sm font-semibold text-white/50 uppercase tracking-wider group-hover:text-white/70 transition-colors">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-foreground/70 transition-colors">
               Available
             </p>
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           </div>
-          <p className="text-4xl font-bold text-white mt-4 tracking-tight tabular-nums">
+          <p className="text-4xl font-bold text-foreground mt-4 tracking-tight tabular-nums">
             {metrics.available}
           </p>
-          <p className="text-[11px] text-white/30 mt-1 font-medium">Ready for deployment</p>
+          <p className="text-[11px] text-muted-foreground/80 mt-1 font-medium">Ready for deployment</p>
         </div>
 
         {/* Card 2: Allocated */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 shadow-xl hover:border-accent/30 hover:bg-white/[0.03] transition-all duration-300 group">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xl hover:border-accent/30 hover:bg-muted transition-all duration-300 group">
           <div className="flex justify-between items-start">
-            <p className="text-sm font-semibold text-white/50 uppercase tracking-wider group-hover:text-white/70 transition-colors">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-foreground/70 transition-colors">
               Allocated
             </p>
             <Users className="w-5 h-5 text-sky-400" />
           </div>
-          <p className="text-4xl font-bold text-white mt-4 tracking-tight tabular-nums">
+          <p className="text-4xl font-bold text-foreground mt-4 tracking-tight tabular-nums">
             {metrics.allocated}
           </p>
-          <p className="text-[11px] text-white/30 mt-1 font-medium">Assigned to employees</p>
+          <p className="text-[11px] text-muted-foreground/80 mt-1 font-medium">Assigned to employees</p>
         </div>
 
         {/* Card 3: In Maintenance (labeled as Maintenance/Available in mockup) */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 shadow-xl hover:border-accent/30 hover:bg-white/[0.03] transition-all duration-300 group">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xl hover:border-accent/30 hover:bg-muted transition-all duration-300 group">
           <div className="flex justify-between items-start">
-            <p className="text-sm font-semibold text-white/50 uppercase tracking-wider group-hover:text-white/70 transition-colors">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-foreground/70 transition-colors">
               In Maintenance
             </p>
             <Wrench className="w-5 h-5 text-amber-400 animate-pulse" />
           </div>
-          <p className="text-4xl font-bold text-white mt-4 tracking-tight tabular-nums">
+          <p className="text-4xl font-bold text-foreground mt-4 tracking-tight tabular-nums">
             {metrics.maintenance}
           </p>
-          <p className="text-[11px] text-white/30 mt-1 font-medium">Currently offline</p>
+          <p className="text-[11px] text-muted-foreground/80 mt-1 font-medium">Currently offline</p>
         </div>
 
         {/* Card 4: Active Bookings */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 shadow-xl hover:border-accent/30 hover:bg-white/[0.03] transition-all duration-300 group">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xl hover:border-accent/30 hover:bg-muted transition-all duration-300 group">
           <div className="flex justify-between items-start">
-            <p className="text-sm font-semibold text-white/50 uppercase tracking-wider group-hover:text-white/70 transition-colors">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-foreground/70 transition-colors">
               Active Bookings
             </p>
             <BookOpen className="w-5 h-5 text-blue-400" />
           </div>
-          <p className="text-4xl font-bold text-white mt-4 tracking-tight tabular-nums">
+          <p className="text-4xl font-bold text-foreground mt-4 tracking-tight tabular-nums">
             {metrics.activeBookings}
           </p>
-          <p className="text-[11px] text-white/30 mt-1 font-medium">Shared resource sessions</p>
+          <p className="text-[11px] text-muted-foreground/80 mt-1 font-medium">Shared resource sessions</p>
         </div>
 
         {/* Card 5: Pending Transfers */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 shadow-xl hover:border-accent/30 hover:bg-white/[0.03] transition-all duration-300 group">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xl hover:border-accent/30 hover:bg-muted transition-all duration-300 group">
           <div className="flex justify-between items-start">
-            <p className="text-sm font-semibold text-white/50 uppercase tracking-wider group-hover:text-white/70 transition-colors">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-foreground/70 transition-colors">
               Pending Transfers
             </p>
             <ArrowLeftRight className="w-5 h-5 text-indigo-400" />
           </div>
-          <p className="text-4xl font-bold text-white mt-4 tracking-tight tabular-nums">
+          <p className="text-4xl font-bold text-foreground mt-4 tracking-tight tabular-nums">
             {metrics.pendingTransfers}
           </p>
-          <p className="text-[11px] text-white/30 mt-1 font-medium">Awaiting approval</p>
+          <p className="text-[11px] text-muted-foreground/80 mt-1 font-medium">Awaiting approval</p>
         </div>
 
         {/* Card 6: Upcoming Returns */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 shadow-xl hover:border-accent/30 hover:bg-white/[0.03] transition-all duration-300 group">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xl hover:border-accent/30 hover:bg-muted transition-all duration-300 group">
           <div className="flex justify-between items-start">
-            <p className="text-sm font-semibold text-white/50 uppercase tracking-wider group-hover:text-white/70 transition-colors">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-foreground/70 transition-colors">
               Upcoming Returns
             </p>
             <Calendar className="w-5 h-5 text-violet-400" />
           </div>
-          <p className="text-4xl font-bold text-white mt-4 tracking-tight tabular-nums">
+          <p className="text-4xl font-bold text-foreground mt-4 tracking-tight tabular-nums">
             {metrics.upcomingReturns}
           </p>
-          <p className="text-[11px] text-white/30 mt-1 font-medium">Due in next 7 days</p>
+          <p className="text-[11px] text-muted-foreground/80 mt-1 font-medium">Due in next 7 days</p>
         </div>
       </div>
 
@@ -175,14 +175,14 @@ export default function DashboardOverviewPage() {
         </Link>
         <Link
           href="/dashboard/booking"
-          className="flex items-center justify-center gap-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 px-6 py-4 text-sm font-bold text-white/90 transition-all duration-150 active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 rounded-xl bg-card border border-border hover:bg-muted px-6 py-4 text-sm font-bold text-foreground transition-all duration-150 active:scale-[0.98]"
         >
           <BookOpen className="w-4 h-4" />
           Book resource
         </Link>
         <Link
           href="/dashboard/transfer"
-          className="flex items-center justify-center gap-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 px-6 py-4 text-sm font-bold text-white/90 transition-all duration-150 active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 rounded-xl bg-card border border-border hover:bg-muted px-6 py-4 text-sm font-bold text-foreground transition-all duration-150 active:scale-[0.98]"
         >
           <Send className="w-4 h-4" />
           Raise requests
@@ -190,9 +190,9 @@ export default function DashboardOverviewPage() {
       </div>
 
       {/* ─── Recent Activity Section (Matches Screen 2 Mockup bottom) ─── */}
-      <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 md:p-8 space-y-6 shadow-xl">
+      <div className="rounded-2xl border border-border bg-card p-6 md:p-8 space-y-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-white">Recent Activity</h3>
+          <h3 className="text-lg font-bold text-foreground">Recent Activity</h3>
           <Link
             href="/dashboard/notifications"
             className="text-xs text-accent hover:text-accent/80 font-semibold transition-colors flex items-center gap-1"
@@ -203,14 +203,14 @@ export default function DashboardOverviewPage() {
 
         <div className="relative pl-6 space-y-6">
           {/* Vertical timeline connector */}
-          <div className="absolute left-[9px] top-2 bottom-2 w-px bg-white/8" />
+          <div className="absolute left-[9px] top-2 bottom-2 w-px bg-muted" />
 
           {recentActivity.map((activity) => {
             const Icon = activity.icon
             return (
               <div key={activity.id} className="relative flex gap-4 items-start group">
                 {/* Timeline node dot */}
-                <div className="absolute -left-6 top-1.5 w-[9px] h-[9px] rounded-full border border-white/20 bg-[hsl(240_10%_8%)] group-hover:border-accent transition-colors" />
+                <div className="absolute -left-6 top-1.5 w-[9px] h-[9px] rounded-full border border-border bg-card group-hover:border-accent transition-colors" />
 
                 {/* Left Icon Badge */}
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${activity.color}`}>
@@ -220,10 +220,10 @@ export default function DashboardOverviewPage() {
                 {/* Activity Message Text */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-4">
-                    <p className="text-sm text-white/85 leading-relaxed font-medium">
+                    <p className="text-sm text-foreground/85 leading-relaxed font-medium">
                       {activity.text}
                     </p>
-                    <span className="text-[10px] text-white/30 font-medium shrink-0 flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground/80 font-medium shrink-0 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {activity.time}
                     </span>

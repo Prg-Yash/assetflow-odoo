@@ -12,6 +12,9 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { useSession } from '@/hooks/use-organizations'
 import { submitAuth } from '../auth-api'
 
 const FEATURES = [
@@ -22,12 +25,23 @@ const FEATURES = [
 ]
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'form' | 'success'>('form')
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({ name: '', email: '', password: '' })
+
+  const { data: sessionData, isLoading: isSessionLoading } = useSession()
+  const user = sessionData?.user
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isSessionLoading && user) {
+      router.push('/dashboard')
+    }
+  }, [user, isSessionLoading, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -41,7 +55,7 @@ export default function RegisterPage() {
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
-        callbackURL: '/dashboard/overview',
+        callbackURL: '/dashboard',
       })
       setStep('success')
     } catch (err) {

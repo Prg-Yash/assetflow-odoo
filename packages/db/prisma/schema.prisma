@@ -171,6 +171,7 @@ model Organization {
   activityLogs        ActivityLog[]
   invites             Invite[]
   settings            Settings?
+  approvalRequests    ApprovalRequest[]
 
   @@map("organization")
 }
@@ -256,6 +257,7 @@ model User {
   transfersRequested  TransferRequest[]    @relation("RequestedBy")
   transfersApproved   TransferRequest[]    @relation("ApprovedBy")
   invitesSent         Invite[]             @relation("InvitedBy")
+  reviewedRequests    ApprovalRequest[]    @relation("ReviewedRequests")
 
   @@index([organizationId])
   @@index([roleId])
@@ -358,6 +360,7 @@ model Employee {
   transferFrom       TransferRequest[] @relation("TransferFromEmployee")
   transferTo         TransferRequest[] @relation("TransferToEmployee")
   bookings           Booking[]
+  approvalRequests   ApprovalRequest[]
 
   @@unique([organizationId, employeeCode])
   @@index([organizationId])
@@ -484,6 +487,7 @@ model Asset {
   bookings           Booking[]
   auditItems         AuditItem[]
   maintenanceRequests MaintenanceRequest[]
+  approvalRequests    ApprovalRequest[]
 
   @@unique([organizationId, assetCode])
   @@index([organizationId])
@@ -775,6 +779,10 @@ model Invite {
   token          String       @unique
   expiresAt      DateTime
   accepted       Boolean      @default(false)
+  name           String?
+  designation    String?
+  departmentId   String?
+  phone          String?
   createdAt      DateTime     @default(now())
 
   @@index([organizationId])
@@ -797,3 +805,48 @@ model Settings {
 
   @@map("settings")
 }
+
+// ==========================================
+// APPROVAL MANAGEMENT
+// ==========================================
+
+enum ApprovalRequestType {
+  ALLOCATION
+  RETURN
+  MAINTENANCE
+}
+
+enum ApprovalRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ApprovalRequest {
+  id              String                @id @default(cuid())
+  organizationId  String
+  organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assetId         String
+  asset           Asset                 @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  employeeId      String
+  employee        Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  requestType     ApprovalRequestType
+  status          ApprovalRequestStatus @default(PENDING)
+  priority        String                @default("MEDIUM")
+  reason          String?
+  rejectionReason String?
+  comments        String?
+  reviewedById    String?
+  reviewedBy      User?                 @relation("ReviewedRequests", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([organizationId])
+  @@index([assetId])
+  @@index([employeeId])
+  @@index([status])
+  @@index([requestType])
+  @@map("approval_request")
+}
+

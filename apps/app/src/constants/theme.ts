@@ -1,26 +1,45 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
 import '@/global.css';
 
 import { Platform } from 'react-native';
 
+export const NeoColors = {
+  primary: '#FF6600',
+  primaryGlow: '#FF8533',
+  primaryDark: '#CC5200',
+  background: '#0B0D13',
+  card: '#161923',
+  cardElevated: '#1E2233',
+  cardBorder: '#252A3E',
+  cardBorderOrange: '#FF660044',
+  text: '#FFFFFF',
+  textSecondary: '#A0A6B2',
+  textMuted: '#687082',
+  success: '#10B981',
+  successBg: 'rgba(16, 185, 129, 0.12)',
+  warning: '#F59E0B',
+  warningBg: 'rgba(245, 158, 11, 0.12)',
+  danger: '#EF4444',
+  dangerBg: 'rgba(239, 68, 68, 0.12)',
+  info: '#3B82F6',
+  infoBg: 'rgba(59, 130, 246, 0.12)',
+};
+
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    ...NeoColors,
+    text: '#FFFFFF',
+    background: '#0B0D13',
+    backgroundElement: '#161923',
+    backgroundSelected: '#FF6600',
+    textSecondary: '#A0A6B2',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    ...NeoColors,
+    text: '#FFFFFF',
+    background: '#0B0D13',
+    backgroundElement: '#161923',
+    backgroundSelected: '#FF6600',
+    textSecondary: '#A0A6B2',
   },
 } as const;
 
@@ -28,13 +47,9 @@ export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
@@ -61,5 +76,5 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+export const BottomTabInset = Platform.select({ ios: 60, android: 80 }) ?? 60;
 export const MaxContentWidth = 800;

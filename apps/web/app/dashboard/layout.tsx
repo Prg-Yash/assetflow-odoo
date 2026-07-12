@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   BarChart3,
   Bell,
+  Building2,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -24,6 +25,7 @@ import {
 /* ─── Nav items ──────────────────────────────────────────────────────────── */
 const NAV = [
   { href: '/dashboard/overview',      label: 'Dashboard',             icon: LayoutDashboard },
+  { href: '/dashboard/organizations', label: 'Organisations',         icon: Building2 },
   { href: '/dashboard/setup',         label: 'Organization Setup',    icon: Settings },
   { href: '/dashboard/assets',        label: 'Assets',                icon: Package },
   { href: '/dashboard/transfer',      label: 'Allocation & Transfer', icon: ArrowLeftRight },
@@ -329,6 +331,14 @@ function Topbar({
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
                   Dashboard
+                </Link>
+                <Link
+                  href="/dashboard/organizations"
+                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-white/70 hover:bg-white/6 hover:text-white transition-colors"
+                  onClick={() => setProfileOpen(false)}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  Organisations
                 </Link>
                 <Link
                   href="/dashboard/setup"

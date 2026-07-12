@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   Eye,
@@ -11,6 +12,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
+import { submitAuth } from '../auth-api'
 
 const FEATURES = [
   { icon: Package, label: 'Full asset lifecycle management' },
@@ -20,8 +22,10 @@ const FEATURES = [
 ]
 
 export default function LoginPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({ email: '', password: '' })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -29,9 +33,27 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1500))
-    setLoading(false)
+    const requestedCallback =
+      typeof window === 'undefined'
+        ? '/dashboard/overview'
+        : new URLSearchParams(window.location.search).get('callbackURL') || '/dashboard/overview'
+    const callbackURL = requestedCallback.startsWith('/') ? requestedCallback : '/dashboard/overview'
+
+    try {
+      await submitAuth('/sign-in/email', {
+        email: form.email.trim(),
+        password: form.password,
+        callbackURL,
+      })
+      router.push(callbackURL)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -129,6 +151,12 @@ export default function LoginPage() {
 
             {/* Form */}
             <form id="login-form" onSubmit={handleSubmit} className="space-y-4" noValidate>
+              {error && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+
               {/* Email */}
               <div className="space-y-1.5">
                 <label htmlFor="login-email" className="block text-xs font-medium text-white/60">

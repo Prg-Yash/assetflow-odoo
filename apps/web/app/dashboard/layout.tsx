@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useState, useEffect, useRef } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import {
   BarChart3,
   Bell,
@@ -22,6 +22,7 @@ import {
   User,
 } from 'lucide-react'
 import { ThemeToggle } from '../components/theme-toggle'
+import { signOut } from '../auth/auth-api'
 
 /* ─── Nav items ──────────────────────────────────────────────────────────── */
 const NAV = [
@@ -53,11 +54,13 @@ function Sidebar({
   onCollapse,
   mobileOpen,
   onMobileClose,
+  onSignOut,
 }: {
   collapsed: boolean
   onCollapse: () => void
   mobileOpen: boolean
   onMobileClose: () => void
+  onSignOut: () => void
 }) {
   const pathname = usePathname()
   const ref = useRef<HTMLDivElement>(null)
@@ -72,7 +75,8 @@ function Sidebar({
     return () => document.removeEventListener('mousedown', handler)
   }, [mobileOpen, onMobileClose])
 
-  useEffect(() => { onMobileClose() }, [pathname])
+  /* Close mobile on route change */
+  useEffect(() => { onMobileClose() }, [pathname, onMobileClose])
 
   return (
     <>
@@ -185,6 +189,7 @@ function Sidebar({
               <p className="text-[11px] text-muted-foreground truncate">admin@assetflow.com</p>
             </div>
             <button
+              onClick={onSignOut}
               className={[
                 'shrink-0 w-7 h-7 text-muted-foreground hover:text-red-500 hover:bg-muted transition-colors',
                 iconBtn,
@@ -204,9 +209,10 @@ function Sidebar({
 /* ─── Topbar ─────────────────────────────────────────────────────────────── */
 function Topbar({
   onMobileOpen,
+  onSignOut,
 }: {
-  collapsed: boolean
   onMobileOpen: () => void
+  onSignOut: () => void
 }) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
@@ -338,15 +344,18 @@ function Topbar({
                   Notifications
                 </Link>
               </div>
-              <div className="border-t border-border py-1">
-                <Link
-                  href="/auth/login"
-                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-red-500 hover:bg-muted transition-colors"
-                  onClick={() => setProfileOpen(false)}
+              <div className="border-t border-white/8 py-1">
+                <button
+                  type="button"
+                  className="flex items-center gap-2.5 px-4 py-2 text-xs text-red-400 hover:bg-white/6 transition-colors"
+                  onClick={() => {
+                    setProfileOpen(false)
+                    onSignOut()
+                  }}
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Sign out
-                </Link>
+                </button>
               </div>
             </div>
           )}
@@ -360,8 +369,19 @@ function Topbar({
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed]       = useState(false)
   const [mobileOpen, setMobileOpen]     = useState(false)
+  const router = useRouter()
 
   const sidebarW = collapsed ? 'lg:pl-[68px]' : 'lg:pl-[240px]'
+  const closeMobile = useCallback(() => setMobileOpen(false), [])
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } finally {
+      router.push('/auth/login')
+      router.refresh()
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
@@ -369,13 +389,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         collapsed={collapsed}
         onCollapse={() => setCollapsed(v => !v)}
         mobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
+        onMobileClose={closeMobile}
+        onSignOut={handleSignOut}
       />
 
       <div className={['transition-all duration-300', sidebarW].join(' ')}>
         <Topbar
-          collapsed={collapsed}
           onMobileOpen={() => setMobileOpen(true)}
+          onSignOut={handleSignOut}
         />
         <main className="p-4 sm:p-6">
           {children}

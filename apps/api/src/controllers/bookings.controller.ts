@@ -23,6 +23,12 @@ export const getBookings = async (
       ...(status && { status }),
     };
 
+    if (req.role?.roleType === "EMPLOYEE" && req.employeeProfile) {
+      where.employeeId = req.employeeProfile.id;
+    } else if (req.role?.roleType === "DEPARTMENT_HEAD" && req.employeeProfile?.departmentId) {
+      where.employee = { departmentId: req.employeeProfile.departmentId };
+    }
+
     const bookings = await db.booking.findMany({
       where,
       include: {

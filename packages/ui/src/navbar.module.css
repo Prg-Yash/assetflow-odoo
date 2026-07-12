@@ -1,0 +1,134 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand img {
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.rightSide {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 2px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), #ff9d4d);
+  cursor: pointer;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  object-fit: cover;
+  display: block;
+}
+
+.dropdown {
+  position: absolute;
+  top: 58px;
+  right: 0;
+  min-width: 240px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease,
+    max-height 0.24s ease;
+  z-index: 40;
+}
+
+.dropdownOpen {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 320px;
+}
+
+.dropdownClosed {
+  opacity: 0;
+  transform: translateY(-10px);
+  max-height: 0;
+  pointer-events: none;
+}
+
+.dropdownHeader {
+  padding: 16px 18px;
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dropdownName {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.dropdownEmail {
+  font-size: 0.85rem;
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.dropdownList {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+}
+
+.dropdownItem {
+  display: block;
+  padding: 12px 12px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  color: var(--foreground);
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.dropdownItem:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+@media (max-width: 720px) {
+  .container {
+    padding: 14px 16px;
+  }
+
+  .dropdown {
+    right: 0;
+    left: auto;
+  }
+}

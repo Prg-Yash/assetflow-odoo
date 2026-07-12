@@ -11,7 +11,10 @@ const environmentSchema = z.object({
   
   // Redis connection configuration
   REDIS_HOST: z.string().default("127.0.0.1"),
-  REDIS_PORT: z.coerce.number().int().positive().default(6379),
+  REDIS_PORT: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? undefined : val),
+    z.coerce.number().int().positive()
+  ).default(6379),
   REDIS_PASSWORD: z.string().optional().or(z.literal("")),
   REDIS_DB: z.coerce.number().int().nonnegative().default(0),
   REDIS_USE_TLS: z.preprocess(
@@ -38,14 +41,20 @@ const environmentSchema = z.object({
   // Primary Email Provider: AWS SES Configurations
   // ==========================================
   SES_SMTP_HOST: z.string().optional(),
-  SES_SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SES_SMTP_PORT: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? undefined : val),
+    z.coerce.number().int().positive().optional()
+  ),
   SES_SMTP_USER: z.string().optional().or(z.literal("")),
   SES_SMTP_PASS: z.string().optional().or(z.literal("")),
   SMTP_FROM_EMAIL: z.string().email().default("noreply@assetflow.com"),
 
   // Fallbacks for SES to support generic SMTP variables if SES_SMTP_* is empty
   SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_PORT: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? undefined : val),
+    z.coerce.number().int().positive().optional()
+  ),
   SMTP_USER: z.string().optional().or(z.literal("")),
   SMTP_PASS: z.string().optional().or(z.literal("")),
 
@@ -55,7 +64,10 @@ const environmentSchema = z.object({
   GMAIL_SMTP_USER: z.string().optional().or(z.literal("")),
   GMAIL_SMTP_PASS: z.string().optional().or(z.literal("")),
   GMAIL_SMTP_HOST: z.string().default("smtp.gmail.com"),
-  GMAIL_SMTP_PORT: z.coerce.number().int().positive().default(587),
+  GMAIL_SMTP_PORT: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null ? undefined : val),
+    z.coerce.number().int().positive()
+  ).default(587),
 
   // Other channels
   TWILIO_ACCOUNT_SID: z.string().optional().or(z.literal("")),

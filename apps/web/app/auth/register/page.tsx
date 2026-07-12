@@ -3,17 +3,12 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import {
-  ArrowRight,
-  Building2,
   CheckCircle,
   Eye,
   EyeOff,
   Loader2,
-  Lock,
-  Mail,
   Package,
   Shield,
-  User,
   Users,
   Zap,
 } from 'lucide-react'
@@ -30,19 +25,10 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'form' | 'success'>('form')
 
-  const [form, setForm] = useState({
-    org: '',
-    name: '',
-    email: '',
-    password: '',
-    role: '',
-  })
+  const [form, setForm] = useState({ name: '', email: '', password: '' })
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,24 +40,19 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex bg-background text-foreground font-sans">
-      {/* ── Left panel: brand / features ─────────────────────────────── */}
-      <aside className="hidden lg:flex flex-col justify-between w-[46%] xl:w-[42%] relative overflow-hidden bg-secondary px-12 py-14 text-secondary-foreground">
+
+      {/* ── LEFT PANEL (lg+) ──────────────────────────────────────────── */}
+      <aside className="hidden lg:flex flex-col justify-between w-[46%] xl:w-[42%] relative overflow-hidden  px-12 py-14 text-secondary-foreground">
         {/* Decorative blobs */}
         <div
           aria-hidden
           className="pointer-events-none absolute -top-28 -left-28 w-[480px] h-[480px] rounded-full opacity-20"
-          style={{
-            background:
-              'radial-gradient(circle, hsl(24 100% 50%) 0%, transparent 70%)',
-          }}
+          style={{ background: 'radial-gradient(circle, hsl(24 100% 50%) 0%, transparent 70%)' }}
         />
         <div
           aria-hidden
           className="pointer-events-none absolute bottom-0 right-0 w-[360px] h-[360px] rounded-full opacity-15"
-          style={{
-            background:
-              'radial-gradient(circle, hsl(24 100% 60%) 0%, transparent 70%)',
-          }}
+          style={{ background: 'radial-gradient(circle, hsl(24 100% 60%) 0%, transparent 70%)' }}
         />
 
         {/* Logo */}
@@ -125,326 +106,233 @@ export default function RegisterPage() {
         </blockquote>
       </aside>
 
-      {/* ── Right panel: form ─────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 sm:px-12 py-12">
-        {/* Mobile logo */}
-        <Link
-          href="/"
-          className="lg:hidden mb-10 text-2xl font-light tracking-tight"
-        >
-          Asset<span className="font-semibold text-accent">Flow</span>
-        </Link>
+      {/* ── RIGHT PANEL ───────────────────────────────────────────────── */}
+      <main className="flex-1 flex items-center justify-center px-4 py-12 bg-[hsl(240_10%_5%)] dark:bg-[hsl(240_10%_3%)]">
 
-        <div className="w-full max-w-md">
-          {step === 'success' ? (
-            /* ── Success state ── */
-            <div className="text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-accent/10 mx-auto">
-                <CheckCircle className="w-10 h-10 text-accent" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold">You&apos;re all set!</h2>
-                <p className="text-muted-foreground text-sm">
-                  We&apos;ve sent a confirmation link to{' '}
-                  <span className="text-foreground font-medium">{form.email}</span>.
-                  Check your inbox to activate your account.
-                </p>
-              </div>
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"
-              >
-                Back to home <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          ) : (
-            /* ── Registration form ── */
-            <>
-              <div className="mb-8 space-y-1">
-                <h2 className="text-3xl font-bold tracking-tight">
-                  Create your account
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Already have an account?{' '}
-                  <Link
-                    href="/login"
-                    className="font-medium text-accent hover:underline"
-                  >
-                    Sign in
-                  </Link>
-                </p>
-              </div>
+        {/* Card */}
+        <div className="w-full max-w-[480px] rounded-2xl border border-white/10 bg-[hsl(240_10%_10%)] dark:bg-[hsl(240_10%_8%)] overflow-hidden shadow-[0_32px_80px_hsl(240_10%_3%/0.7)] ring-1 ring-white/5">
 
-              <form
-                id="register-form"
-                onSubmit={handleSubmit}
-                className="space-y-4"
-                noValidate
-              >
-                {/* Organisation */}
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="reg-org"
-                    className="block text-sm font-medium"
-                  >
-                    Organisation name
-                  </label>
-                  <div className="relative">
-                    <Building2 className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      id="reg-org"
-                      name="org"
-                      type="text"
-                      required
-                      placeholder="Acme Corp"
-                      value={form.org}
-                      onChange={handleChange}
-                      className="w-full rounded-lg border border-input bg-card/60 py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition"
-                    />
+          {/* Title bar */}
+          <div className="border-b border-white/10 px-8 py-5 text-center">
+            {/* Mobile-only logo */}
+            <Link href="/" className="lg:hidden block mb-1 text-lg font-light tracking-tight text-white">
+              Asset<span className="font-semibold text-accent">Flow</span>
+            </Link>
+            <h2 className="text-sm font-semibold text-white/90 tracking-tight">
+              AssetFlow – register
+            </h2>
+          </div>
+
+          <div className="px-8 pt-8 pb-8 space-y-6">
+            {step === 'success' ? (
+              /* ── Success state ── */
+              <div className="text-center space-y-5 py-2">
+                <div className="flex justify-center">
+                  <div className="w-[72px] h-[72px] rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center">
+                    <CheckCircle className="w-8 h-8 text-accent" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold text-white">Account created!</h3>
+                  <p className="text-sm text-white/50 leading-relaxed">
+                    Check your inbox at{' '}
+                    <span className="text-white font-medium">{form.email}</span>
+                    {' '}to verify and activate.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3.5 text-left">
+                  <p className="text-sm text-white/50 leading-relaxed">
+                    Your employee account is ready.
+                    <br />
+                    Admin roles will be assigned by your org admin.
+                  </p>
+                </div>
+                <Link
+                  href="/auth/login"
+                  className="flex w-full items-center justify-center rounded-lg bg-primary hover:opacity-90 py-3 text-sm font-semibold text-primary-foreground transition-all duration-200 shadow-lg shadow-accent/20"
+                >
+                  Go to Login
+                </Link>
+              </div>
+            ) : (
+              <>
+                {/* Avatar */}
+                <div className="flex justify-center">
+                  <div className="w-[72px] h-[72px] rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center">
+                    <span className="text-white font-semibold text-xl tracking-wider select-none">AF</span>
                   </div>
                 </div>
 
-                {/* Full name */}
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="reg-name"
-                    className="block text-sm font-medium"
-                  >
-                    Full name
-                  </label>
-                  <div className="relative">
-                    <User className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                {/* Form */}
+                <form id="register-form" onSubmit={handleSubmit} className="space-y-4" noValidate>
+                  {/* Full name */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="reg-name" className="block text-xs font-medium text-white/60">
+                      Full name
+                    </label>
                     <input
                       id="reg-name"
                       name="name"
                       type="text"
                       required
+                      autoComplete="name"
                       placeholder="Jane Smith"
                       value={form.name}
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-input bg-card/60 py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition"
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-transparent transition"
                     />
                   </div>
-                </div>
 
-                {/* Email */}
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="reg-email"
-                    className="block text-sm font-medium"
-                  >
-                    Work email
-                  </label>
-                  <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  {/* Email */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="reg-email" className="block text-xs font-medium text-white/60">
+                      Email
+                    </label>
                     <input
                       id="reg-email"
                       name="email"
                       type="email"
                       required
-                      placeholder="jane@acmecorp.com"
+                      autoComplete="email"
+                      placeholder="name@company.com"
                       value={form.email}
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-input bg-card/60 py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition"
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-transparent transition"
                     />
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="reg-password" className="block text-xs font-medium text-white/60">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="reg-password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        minLength={8}
+                        autoComplete="new-password"
+                        placeholder="Min. 8 characters"
+                        value={form.password}
+                        onChange={handleChange}
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 pr-11 text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-transparent transition"
+                      />
+                      <button
+                        type="button"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {form.password.length > 0 && <PasswordStrength value={form.password} />}
+                  </div>
+
+                  {/* Terms */}
+                  <p className="text-xs text-white/40 leading-relaxed">
+                    By creating an account you agree to our{' '}
+                    <Link href="#" className="text-accent hover:underline font-medium">Terms of Service</Link>
+                    {' '}and{' '}
+                    <Link href="#" className="text-accent hover:underline font-medium">Privacy Policy</Link>.
+                  </p>
+
+                  {/* Submit */}
+                  <button
+                    id="register-submit"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary hover:opacity-90 active:scale-[0.99] py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-accent/20"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Creating account…
+                      </>
+                    ) : (
+                      'Create Account'
+                    )}
+                  </button>
+                </form>
+
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/10" />
+                  </div>
+                  <div className="relative flex justify-start">
+                    <span className="bg-[hsl(240_10%_10%)] dark:bg-[hsl(240_10%_8%)] pr-3 text-xs font-medium text-white/40">
+                      Already have an account?
+                    </span>
                   </div>
                 </div>
 
-                {/* Role */}
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="reg-role"
-                    className="block text-sm font-medium"
-                  >
-                    Your role
-                  </label>
-                  <select
-                    id="reg-role"
-                    name="role"
-                    required
-                    value={form.role}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-input bg-card/60 py-2.5 px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition appearance-none"
-                  >
-                    <option value="" disabled>
-                      Select a role…
-                    </option>
-                    <option value="admin">Administrator</option>
-                    <option value="manager">Asset Manager</option>
-                    <option value="employee">Employee</option>
-                    <option value="auditor">Auditor</option>
-                  </select>
-                </div>
-
-                {/* Password */}
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="reg-password"
-                    className="block text-sm font-medium"
-                  >
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      id="reg-password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      minLength={8}
-                      placeholder="Min. 8 characters"
-                      value={form.password}
-                      onChange={handleChange}
-                      className="w-full rounded-lg border border-input bg-card/60 py-2.5 pl-10 pr-10 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition"
-                    />
-                    <button
-                      type="button"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
+                {/* Info box + sign-in link */}
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3.5">
+                    <p className="text-sm text-white/50 leading-relaxed">
+                      Sign up creates an employee account
+                      <br />
+                      admin roles assigned later
+                    </p>
                   </div>
-                  {/* Password strength bar */}
-                  {form.password.length > 0 && (
-                    <PasswordStrength value={form.password} />
-                  )}
-                </div>
 
-                {/* Terms */}
-                <p className="text-xs text-muted-foreground leading-relaxed pt-1">
-                  By creating an account you agree to our{' '}
-                  <Link href="#" className="text-accent hover:underline font-medium">
-                    Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link href="#" className="text-accent hover:underline font-medium">
-                    Privacy Policy
+                  <Link
+                    href="/auth/login"
+                    id="register-go-login"
+                    className="flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 py-3 text-sm font-medium text-white/80 hover:text-white transition-colors"
+                  >
+                    Sign In
                   </Link>
-                  .
-                </p>
-
-                {/* Submit */}
-                <button
-                  id="register-submit"
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 mt-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Creating account…
-                    </>
-                  ) : (
-                    <>
-                      Create account
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border" />
                 </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-background px-3 text-xs text-muted-foreground">
-                    or continue with
-                  </span>
-                </div>
-              </div>
-
-              {/* SSO placeholder */}
-              <button
-                id="register-google"
-                type="button"
-                className="w-full flex items-center justify-center gap-2.5 rounded-lg border border-border bg-card/60 py-2.5 text-sm font-medium hover:bg-muted/50 hover:border-accent/30 transition-all duration-200"
-              >
-                <GoogleIcon />
-                Continue with Google
-              </button>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </main>
     </div>
   )
 }
 
-/* ── Password strength indicator ────────────────────────────────────── */
-function getStrength(pw: string): { score: number; label: string; color: string } {
+/* ── Password strength indicator ─────────────────────────────────────── */
+function getStrength(pw: string): { score: number; label: string; colorClass: string } {
   let score = 0
   if (pw.length >= 8) score++
   if (/[A-Z]/.test(pw)) score++
   if (/[0-9]/.test(pw)) score++
   if (/[^A-Za-z0-9]/.test(pw)) score++
 
-  if (score <= 1) return { score, label: 'Weak', color: 'bg-destructive' }
-  if (score === 2) return { score, label: 'Fair', color: 'bg-yellow-500' }
-  if (score === 3) return { score, label: 'Good', color: 'bg-green-500' }
-  return { score, label: 'Strong', color: 'bg-green-600' }
+  if (score <= 1) return { score, label: 'Weak', colorClass: 'bg-destructive' }
+  if (score === 2) return { score, label: 'Fair', colorClass: 'bg-yellow-500' }
+  if (score === 3) return { score, label: 'Good', colorClass: 'bg-green-500' }
+  return { score, label: 'Strong', colorClass: 'bg-green-400' }
 }
 
 function PasswordStrength({ value }: { value: string }) {
-  const { score, label, color } = getStrength(value)
+  const { score, label, colorClass } = getStrength(value)
   return (
     <div className="space-y-1.5 pt-1">
       <div className="flex gap-1">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-              i < score ? color : 'bg-border'
-            }`}
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${i < score ? colorClass : 'bg-white/10'
+              }`}
           />
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-white/40">
         Strength:{' '}
-        <span
-          className={
-            score <= 1
-              ? 'text-destructive'
-              : score === 2
-                ? 'text-yellow-500'
-                : 'text-green-500'
-          }
-        >
+        <span className={
+          score <= 1 ? 'text-destructive'
+            : score === 2 ? 'text-yellow-500'
+              : 'text-green-500'
+        }>
           {label}
         </span>
       </p>
     </div>
-  )
-}
-
-/* ── Google icon ────────────────────────────────────────────────────── */
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-      <path
-        fill="#4285F4"
-        d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z"
-      />
-      <path
-        fill="#34A853"
-        d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58Z"
-      />
-    </svg>
   )
 }

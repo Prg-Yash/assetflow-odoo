@@ -35,13 +35,19 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
+    const requestedCallback =
+      typeof window === 'undefined'
+        ? '/dashboard/overview'
+        : new URLSearchParams(window.location.search).get('callbackURL') || '/dashboard/overview'
+    const callbackURL = requestedCallback.startsWith('/') ? requestedCallback : '/dashboard/overview'
+
     try {
       await submitAuth('/sign-in/email', {
         email: form.email.trim(),
         password: form.password,
-        callbackURL: '/dashboard/overview',
+        callbackURL,
       })
-      router.push('/dashboard/overview')
+      router.push(callbackURL)
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.')

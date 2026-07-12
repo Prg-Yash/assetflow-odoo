@@ -24,7 +24,14 @@ function getErrorMessage(data: unknown, fallback: string) {
   return fallback
 }
 
-export async function submitAuth(path: '/sign-in/email' | '/sign-up/email', payload: AuthPayload) {
+type AuthPath =
+  | '/sign-in/email'
+  | '/sign-up/email'
+  | '/request-password-reset'
+  | '/reset-password'
+  | '/sign-out'
+
+export async function submitAuth(path: AuthPath, payload: AuthPayload) {
   const response = await fetch(`${apiBaseUrl}/auth${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -40,4 +47,27 @@ export async function submitAuth(path: '/sign-in/email' | '/sign-up/email', payl
   }
 
   return data
+}
+
+export async function requestPasswordReset(email: string) {
+  const redirectTo =
+    typeof window === 'undefined'
+      ? '/auth/reset-password'
+      : `${window.location.origin}/auth/reset-password`
+
+  return submitAuth('/request-password-reset', {
+    email,
+    redirectTo,
+  })
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  return submitAuth('/reset-password', {
+    token,
+    newPassword,
+  })
+}
+
+export async function signOut() {
+  return submitAuth('/sign-out', {})
 }

@@ -170,7 +170,7 @@ export default function Page() {
               </div>
 
               <p className="text-sm text-muted-foreground">
-                Android APK available for direct install. Place the file at <span className="font-medium text-foreground">/public/downloads/assetflow-mobile.apk</span>.
+                Android APK available for direct install.
               </p>
             </div>
 

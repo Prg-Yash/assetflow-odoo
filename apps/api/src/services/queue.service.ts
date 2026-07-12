@@ -51,6 +51,18 @@ class AsyncQueueManager {
    */
   private initializeBullMQ(): void {
     try {
+      const hasExplicitRedisConfig = Boolean(
+        process.env.REDIS_URL || process.env.REDIS_HOST || process.env.REDIS_PORT,
+      );
+      const queueEnabled = process.env.ENABLE_BULLMQ === "true" || hasExplicitRedisConfig;
+
+      if (!queueEnabled) {
+        console.info(
+          "[QueueService] BullMQ disabled for local dev (set ENABLE_BULLMQ=true or REDIS_URL/REDIS_HOST to enable).",
+        );
+        return;
+      }
+
       const redisHost = process.env.REDIS_HOST || "127.0.0.1";
       const redisPort = Number(process.env.REDIS_PORT) || 6379;
       const redisPassword = process.env.REDIS_PASSWORD || undefined;

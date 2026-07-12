@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
 import { ThemeToggle } from './theme-toggle'
+import { BrandLogo } from './brand-logo'
 
 export function LandingNav() {
   const [isOpen, setIsOpen] = useState(false)
@@ -18,9 +19,11 @@ export function LandingNav() {
     <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-8">
         {/* Logo */}
-        <Link href="/" className="text-2xl font-light tracking-tight text-foreground">
-          Asset<span className="font-semibold text-accent">Flow</span>
-        </Link>
+        <BrandLogo
+          href="/"
+          size={34}
+          textClassName="text-foreground"
+        />
 
         {/* Desktop Links */}
         <div className="hidden md:flex gap-8 items-center">

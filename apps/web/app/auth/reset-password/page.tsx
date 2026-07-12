@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense, useState } from 'react'
 import { CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { resetPassword } from '../auth-api'
+import { BrandLogo } from '../../components/brand-logo'
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams()
@@ -45,9 +46,12 @@ function ResetPasswordForm() {
     <main className="min-h-screen flex items-center justify-center bg-[hsl(240_10%_5%)] px-4 py-12 text-white">
       <div className="w-full max-w-[460px] rounded-2xl border border-white/10 bg-[hsl(240_10%_10%)] shadow-[0_32px_80px_hsl(240_10%_3%/0.7)] ring-1 ring-white/5">
         <div className="border-b border-white/10 px-8 py-5 text-center">
-          <Link href="/" className="block text-lg font-light tracking-tight text-white">
-            Asset<span className="font-semibold text-accent">Flow</span>
-          </Link>
+          <BrandLogo
+            href="/"
+            size={34}
+            className="justify-center"
+            textClassName="text-white"
+          />
           <h1 className="mt-1 text-sm font-semibold text-white/90 tracking-tight">
             Create new password
           </h1>

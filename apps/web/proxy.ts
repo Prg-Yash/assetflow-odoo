@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5001/api/v1').replace(/\/$/, '')
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://lr2.aryanshinde.in/api/v1').replace(/\/$/, '')
 
 export async function proxy(request: NextRequest) {
   const sessionResponse = await fetch(`${apiBaseUrl}/auth/get-session`, {

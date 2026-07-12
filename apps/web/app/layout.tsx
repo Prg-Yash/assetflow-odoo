@@ -11,25 +11,23 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'Assest Flow',
-  description: 'asssr',
+  title: 'AssetFlow',
+  description: 'AssetFlow web application',
   generator: 'idl',
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
+        url: '/af-logo-badge.svg',
         type: 'image/svg+xml',
       },
+      {
+        url: '/AF.png',
+        type: 'image/png',
+        sizes: '192x192',
+      },
     ],
-    apple: '/apple-icon.png',
+    apple: '/AF.png',
+    shortcut: '/AF.png',
   },
 }
 

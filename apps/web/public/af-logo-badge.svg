@@ -1,0 +1,12 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="clip">
+      <circle cx="128" cy="128" r="96" />
+    </clipPath>
+  </defs>
+  <circle cx="128" cy="128" r="112" fill="#ffffff" />
+  <circle cx="128" cy="128" r="112" stroke="#111827" stroke-width="12" />
+  <g clip-path="url(#clip)">
+    <image href="/AF.png" x="52" y="52" width="152" height="152" preserveAspectRatio="xMidYMid meet" />
+  </g>
+</svg>

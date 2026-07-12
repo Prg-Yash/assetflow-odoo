@@ -13,6 +13,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { submitAuth } from '../auth-api'
+import { BrandLogo } from '../../components/brand-logo'
 
 const FEATURES = [
   { icon: Package, label: 'Full asset lifecycle management' },
@@ -69,9 +70,12 @@ export default function RegisterPage() {
         />
 
         {/* Logo */}
-        <Link href="/" className="relative z-10 text-2xl font-light tracking-tight text-white">
-          Asset<span className="font-semibold text-accent">Flow</span>
-        </Link>
+        <BrandLogo
+          href="/"
+          size={42}
+          className="relative z-10"
+          textClassName="text-white"
+        />
 
         {/* Middle copy */}
         <div className="relative z-10 space-y-10">
@@ -120,18 +124,21 @@ export default function RegisterPage() {
       </aside>
 
       {/* ── RIGHT PANEL ───────────────────────────────────────────────── */}
-      <main className="flex-1 flex items-center justify-center px-4 py-12 bg-[hsl(240_10%_5%)] dark:bg-[hsl(240_10%_3%)]">
+      <main className="flex-1 flex items-center justify-center px-4 py-12 bg-background">
 
         {/* Card */}
-        <div className="w-full max-w-[480px] rounded-2xl border border-white/10 bg-[hsl(240_10%_10%)] dark:bg-[hsl(240_10%_8%)] overflow-hidden shadow-[0_32px_80px_hsl(240_10%_3%/0.7)] ring-1 ring-white/5">
+        <div className="w-full max-w-[480px] rounded-2xl border border-border bg-card overflow-hidden shadow-xl ring-1 ring-border/40">
 
           {/* Title bar */}
-          <div className="border-b border-white/10 px-8 py-5 text-center">
+          <div className="border-b border-border px-8 py-5 text-center">
             {/* Mobile-only logo */}
-            <Link href="/" className="lg:hidden block mb-1 text-lg font-light tracking-tight text-white">
-              Asset<span className="font-semibold text-accent">Flow</span>
-            </Link>
-            <h2 className="text-sm font-semibold text-white/90 tracking-tight">
+            <BrandLogo
+              href="/"
+              size={34}
+              className="lg:hidden mb-2 justify-center"
+              textClassName="text-foreground"
+            />
+            <h2 className="text-sm font-semibold text-foreground tracking-tight">
               AssetFlow – register
             </h2>
           </div>
@@ -141,20 +148,20 @@ export default function RegisterPage() {
               /* ── Success state ── */
               <div className="text-center space-y-5 py-2">
                 <div className="flex justify-center">
-                  <div className="w-[72px] h-[72px] rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center">
+                  <div className="w-[72px] h-[72px] rounded-full border-2 border-border bg-muted/40 flex items-center justify-center">
                     <CheckCircle className="w-8 h-8 text-accent" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-base font-semibold text-white">Account created!</h3>
-                  <p className="text-sm text-white/50 leading-relaxed">
+                  <h3 className="text-base font-semibold text-foreground">Account created!</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     Check your inbox at{' '}
-                    <span className="text-white font-medium">{form.email}</span>
+                    <span className="text-foreground font-medium">{form.email}</span>
                     {' '}to verify and activate.
                   </p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3.5 text-left">
-                  <p className="text-sm text-white/50 leading-relaxed">
+                <div className="rounded-lg border border-border bg-muted/40 px-4 py-3.5 text-left">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     Your employee account is ready.
                     <br />
                     Admin roles will be assigned by your org admin.
@@ -171,8 +178,8 @@ export default function RegisterPage() {
               <>
                 {/* Avatar */}
                 <div className="flex justify-center">
-                  <div className="w-[72px] h-[72px] rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center">
-                    <span className="text-white font-semibold text-xl tracking-wider select-none">AF</span>
+                  <div className="w-[72px] h-[72px] rounded-full border-2 border-border bg-background flex items-center justify-center">
+                    <img src="/AF.png" alt="AssetFlow logo" className="h-9 w-9 object-contain" draggable={false} />
                   </div>
                 </div>
 
@@ -186,7 +193,7 @@ export default function RegisterPage() {
 
                   {/* Full name */}
                   <div className="space-y-1.5">
-                    <label htmlFor="reg-name" className="block text-xs font-medium text-white/60">
+                    <label htmlFor="reg-name" className="block text-xs font-medium text-muted-foreground">
                       Full name
                     </label>
                     <input
@@ -198,13 +205,13 @@ export default function RegisterPage() {
                       placeholder="Jane Smith"
                       value={form.name}
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-transparent transition"
+                      className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-transparent transition"
                     />
                   </div>
 
                   {/* Email */}
                   <div className="space-y-1.5">
-                    <label htmlFor="reg-email" className="block text-xs font-medium text-white/60">
+                    <label htmlFor="reg-email" className="block text-xs font-medium text-muted-foreground">
                       Email
                     </label>
                     <input
@@ -216,13 +223,13 @@ export default function RegisterPage() {
                       placeholder="name@company.com"
                       value={form.email}
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-transparent transition"
+                      className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-transparent transition"
                     />
                   </div>
 
                   {/* Password */}
                   <div className="space-y-1.5">
-                    <label htmlFor="reg-password" className="block text-xs font-medium text-white/60">
+                    <label htmlFor="reg-password" className="block text-xs font-medium text-muted-foreground">
                       Password
                     </label>
                     <div className="relative">
@@ -236,13 +243,13 @@ export default function RegisterPage() {
                         placeholder="Min. 8 characters"
                         value={form.password}
                         onChange={handleChange}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 pr-11 text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-transparent transition"
+                        className="w-full rounded-lg border border-input bg-background px-4 py-3 pr-11 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-transparent transition"
                       />
                       <button
                         type="button"
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                         onClick={() => setShowPassword((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -251,7 +258,7 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Terms */}
-                  <p className="text-xs text-white/40 leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     By creating an account you agree to our{' '}
                     <Link href="#" className="text-accent hover:underline font-medium">Terms of Service</Link>
                     {' '}and{' '}
@@ -279,10 +286,10 @@ export default function RegisterPage() {
                 {/* Divider */}
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10" />
+                    <div className="w-full border-t border-border" />
                   </div>
                   <div className="relative flex justify-start">
-                    <span className="bg-[hsl(240_10%_10%)] dark:bg-[hsl(240_10%_8%)] pr-3 text-xs font-medium text-white/40">
+                    <span className="bg-card pr-3 text-xs font-medium text-muted-foreground">
                       Already have an account?
                     </span>
                   </div>
@@ -290,8 +297,8 @@ export default function RegisterPage() {
 
                 {/* Info box + sign-in link */}
                 <div className="space-y-3">
-                  <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3.5">
-                    <p className="text-sm text-white/50 leading-relaxed">
+                  <div className="rounded-lg border border-border bg-muted/40 px-4 py-3.5">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       Sign up creates an employee account
                       <br />
                       admin roles assigned later
@@ -301,7 +308,7 @@ export default function RegisterPage() {
                   <Link
                     href="/auth/login"
                     id="register-go-login"
-                    className="flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 py-3 text-sm font-medium text-white/80 hover:text-white transition-colors"
+                    className="flex w-full items-center justify-center rounded-lg border border-border bg-background hover:bg-muted py-3 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
                   >
                     Sign In
                   </Link>
@@ -337,12 +344,12 @@ function PasswordStrength({ value }: { value: string }) {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-all duration-300 ${i < score ? colorClass : 'bg-white/10'
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${i < score ? colorClass : 'bg-muted'
               }`}
           />
         ))}
       </div>
-      <p className="text-xs text-white/40">
+      <p className="text-xs text-muted-foreground">
         Strength:{' '}
         <span className={
           score <= 1 ? 'text-destructive'

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { ThemeToggle } from '../components/theme-toggle'
 import { signOut } from '../auth/auth-api'
+import { BrandLogo } from '../components/brand-logo'
 
 /* ─── Nav items for Organization Mode ─────────────────────────────────────────── */
 const ORG_NAV = [
@@ -117,17 +118,20 @@ function Sidebar({
           'flex items-center h-[60px] border-b border-sidebar-border shrink-0 px-4',
           collapsed ? 'lg:justify-center' : 'justify-between',
         ].join(' ')}>
-          <Link
+          <BrandLogo
             href={orgId ? `/dashboard/${orgId}` : '/dashboard'}
-            className={['text-lg font-light tracking-tight text-sidebar-foreground transition-all duration-200', collapsed ? 'lg:hidden' : ''].join(' ')}
-          >
-            Asset<span className="font-semibold text-accent">Flow</span>
-          </Link>
+            size={30}
+            className={[collapsed ? 'lg:hidden' : '', 'transition-all duration-200'].join(' ')}
+            textClassName="text-sidebar-foreground text-base"
+          />
 
           {collapsed && (
-            <Link href={orgId ? `/dashboard/${orgId}` : '/dashboard'} className="hidden lg:flex items-center justify-center">
-              <span className="text-sm font-bold text-accent">AF</span>
-            </Link>
+            <BrandLogo
+              href={orgId ? `/dashboard/${orgId}` : '/dashboard'}
+              size={30}
+              showText={false}
+              className="hidden lg:flex items-center justify-center"
+            />
           )}
 
           <button

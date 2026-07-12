@@ -3,6 +3,7 @@ import { AuthRequest } from "../middleware/auth.middleware.js";
 import { db } from "@repo/db";
 import { ApiError } from "../middleware/error.middleware.js";
 import { recordActivityLog, createNotification } from "../utils/activity.util.js";
+import { queueService } from "../services/queue.service.js";
 
 export const getAudits = async (
   req: AuthRequest,
@@ -253,6 +254,16 @@ export const closeAuditCycle = async (
       entityId: id,
       action: "CLOSED",
       metadata: { title: existing.title, totalItems: existing.auditItems.length },
+    });
+
+    // Enqueue background discrepancy report compilation (`audit-queue` -> apps/worker)
+    queueService.enqueue({
+      type: "AUDIT_DISCREPANCY_GENERATOR",
+      data: {
+        auditCycleId: id,
+        organizationId,
+        recipientEmail: req.user?.email || "admin@assetflow.com",
+      },
     });
 
     res.status(200).json({

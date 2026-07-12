@@ -3,6 +3,7 @@ import { AuthRequest } from "../middleware/auth.middleware.js";
 import { db } from "@repo/db";
 import { ApiError } from "../middleware/error.middleware.js";
 import { recordActivityLog, createNotification } from "../utils/activity.util.js";
+import { queueService } from "../services/queue.service.js";
 
 export const getBookings = async (
   req: AuthRequest,
@@ -160,6 +161,18 @@ export const createBooking = async (
       title: "Booking Confirmed",
       body: `Your time-slot booking for ${asset.name} (${start.toLocaleTimeString()} - ${end.toLocaleTimeString()}) has been confirmed.`,
       type: "BOOKING_CONFIRMED",
+    });
+
+    // Enqueue background booking reminder (`booking-queue` -> apps/worker)
+    queueService.enqueue({
+      type: "BOOKING_REMINDER",
+      data: {
+        bookingId: booking.id,
+        userId: booking.employee.userId,
+        userEmail: booking.employee.user.email,
+        assetName: asset.name,
+        startTime: start.toISOString(),
+      },
     });
 
     res.status(201).json({

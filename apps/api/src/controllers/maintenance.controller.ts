@@ -1,8 +1,11 @@
+
+
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 import { db } from "@repo/db";
 import { ApiError } from "../middleware/error.middleware.js";
 import { recordActivityLog, createNotification } from "../utils/activity.util.js";
+import { queueService } from "../services/queue.service.js";
 
 export const getMaintenanceRequests = async (
   req: AuthRequest,
@@ -166,6 +169,18 @@ export const approveMaintenance = async (
         type: "MAINTENANCE_APPROVED",
       });
     }
+
+    // Enqueue background maintenance reminder (`maintenance-queue` -> apps/worker)
+    queueService.enqueue({
+      type: "MAINTENANCE_REMINDER",
+      data: {
+        assetId: existing.assetId,
+        maintenanceId: id,
+        scheduledDate: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+        assignedToEmail: req.user?.email || "tech@assetflow.com",
+        title: `Scheduled checkup for ${existing.asset.name}`,
+      },
+    });
 
     res.status(200).json({
       success: true,

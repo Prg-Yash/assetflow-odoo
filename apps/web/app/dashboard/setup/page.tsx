@@ -1088,9 +1088,16 @@ const TABS: { id: Tab; label: string; icon: React.ElementType; count?: number }[
 
 /* ─── PAGE ─────────────────────────────────────────────────────────────────── */
 
+const ACTIVE_ORG_NAME_KEY = 'assetflow:activeOrgName'
+
 export default function DashboardSetupPage() {
   const [activeTab, setActiveTab] = useState<Tab>('departments')
+  const [activeOrgName, setActiveOrgName] = useState<string | null>(null)
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' })
+
+  useEffect(() => {
+    setActiveOrgName(sessionStorage.getItem(ACTIVE_ORG_NAME_KEY))
+  }, [])
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type })
@@ -1106,7 +1113,9 @@ export default function DashboardSetupPage() {
       <div className="space-y-1">
         <h2 className="text-2xl font-bold text-white tracking-tight">Organisation Setup</h2>
         <p className="text-sm text-white/40">
-          Configure departments, asset categories, and employee directory for your organisation.
+          {activeOrgName
+            ? <>Configure departments, asset categories, and employees for <span className="text-white/70 font-medium">{activeOrgName}</span>.</>
+            : 'Configure departments, asset categories, and employee directory for your organisation.'}
         </p>
       </div>
 

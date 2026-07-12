@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
+import { ThemeToggle } from './theme-toggle'
 
 export function LandingNav() {
   const [isOpen, setIsOpen] = useState(false)
@@ -33,6 +34,7 @@ export function LandingNav() {
             </Link>
           ))}
           <div className="h-4 w-px bg-border" />
+          <ThemeToggle variant="landing" />
           <Link
             href="/auth/login"
             className="text-sm font-medium hover:text-accent transition-colors duration-300"
@@ -47,14 +49,17 @@ export function LandingNav() {
           </Link>
         </div>
 
-        {/* Mobile menu button */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Toggle menu"
-        >
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        {/* Mobile: theme toggle + menu */}
+        <div className="md:hidden flex items-center gap-1">
+          <ThemeToggle variant="landing" />
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Toggle menu"
+          >
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Drawer */}
@@ -72,6 +77,10 @@ export function LandingNav() {
               </Link>
             ))}
             <div className="border-t border-border pt-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between px-1 py-1">
+                <span className="text-sm font-medium text-muted-foreground">Theme</span>
+                <ThemeToggle variant="landing" />
+              </div>
               <Link
                 href="/auth/login"
                 onClick={() => setIsOpen(false)}

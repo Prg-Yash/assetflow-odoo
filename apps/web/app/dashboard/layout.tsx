@@ -23,6 +23,7 @@ import {
   X,
   User,
 } from 'lucide-react'
+import { ThemeToggle } from '../components/theme-toggle'
 import { signOut } from '../auth/auth-api'
 
 /* ─── Nav items for Organization Mode ─────────────────────────────────────────── */
@@ -45,6 +46,9 @@ const QUICK_NOTIFICATIONS = [
   { id: 'q4', message: 'Audit mismatch: 2 items in main storage', time: '3h ago', dotColor: 'bg-amber-400', unread: false },
 ]
 
+const iconBtn =
+  'flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+
 /* ─── Sidebar ────────────────────────────────────────────────────────────── */
 function Sidebar({
   collapsed,
@@ -66,7 +70,6 @@ function Sidebar({
   const pathname = usePathname()
   const ref = useRef<HTMLDivElement>(null)
 
-  /* Close mobile sidebar on outside click */
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (mobileOpen && ref.current && !ref.current.contains(e.target as Node)) {
@@ -92,67 +95,57 @@ function Sidebar({
 
   return (
     <>
-      {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
           onClick={onMobileClose}
         />
       )}
 
-      {/* Sidebar panel */}
       <aside
         ref={ref}
         className={[
           'fixed top-0 left-0 z-50 h-screen flex flex-col',
-          'bg-[hsl(222_22%_8%)] border-r border-white/8',
+          'bg-sidebar border-r border-sidebar-border text-sidebar-foreground',
           'transition-all duration-300 ease-in-out',
-          /* desktop width */
           collapsed ? 'lg:w-[68px]' : 'lg:w-[240px]',
-          /* mobile: full sidebar, hidden off-screen unless open */
           'w-[240px]',
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         ].join(' ')}
       >
-        {/* Logo row */}
         <div className={[
-          'flex items-center h-[60px] border-b border-white/8 shrink-0 px-4',
+          'flex items-center h-[60px] border-b border-sidebar-border shrink-0 px-4',
           collapsed ? 'lg:justify-center' : 'justify-between',
         ].join(' ')}>
-          {/* Logo text — hidden when collapsed on desktop */}
           <Link
             href={orgId ? `/dashboard/${orgId}` : '/dashboard'}
-            className={['text-lg font-light tracking-tight text-white transition-all duration-200', collapsed ? 'lg:hidden' : ''].join(' ')}
+            className={['text-lg font-light tracking-tight text-sidebar-foreground transition-all duration-200', collapsed ? 'lg:hidden' : ''].join(' ')}
           >
             Asset<span className="font-semibold text-accent">Flow</span>
           </Link>
 
-          {/* Collapsed: just the monogram */}
           {collapsed && (
             <Link href={orgId ? `/dashboard/${orgId}` : '/dashboard'} className="hidden lg:flex items-center justify-center">
               <span className="text-sm font-bold text-accent">AF</span>
             </Link>
           )}
 
-          {/* Desktop collapse toggle */}
           <button
             onClick={onCollapse}
-            className="hidden lg:flex items-center justify-center w-7 h-7 rounded-md text-white/40 hover:text-white hover:bg-white/8 transition-colors"
+            className={['hidden lg:flex w-7 h-7', iconBtn].join(' ')}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
 
-          {/* Mobile close button */}
           <button
             onClick={onMobileClose}
-            className="lg:hidden flex items-center justify-center w-7 h-7 rounded-md text-white/40 hover:text-white hover:bg-white/8 transition-colors"
+            className={['lg:hidden w-7 h-7', iconBtn].join(' ')}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Nav items */}
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
           {menuItems.map(({ href, label, icon: Icon }) => {
             const active = href === '/dashboard'
@@ -165,13 +158,12 @@ function Sidebar({
                 href={href}
                 title={collapsed ? label : undefined}
                 className={[
-                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 relative',
+                  'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
                   active
                     ? 'bg-accent/15 text-accent'
-                    : 'text-white/50 hover:text-white hover:bg-white/6',
+                    : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent',
                 ].join(' ')}
               >
-                {/* Active indicator bar */}
                 <span className={[
                   'absolute left-0 w-[3px] h-6 rounded-r-full bg-accent transition-all duration-150',
                   active ? 'opacity-100' : 'opacity-0',
@@ -179,7 +171,7 @@ function Sidebar({
 
                 <Icon className={[
                   'w-[18px] h-[18px] shrink-0 transition-colors duration-150',
-                  active ? 'text-accent' : 'text-white/40 group-hover:text-white/80',
+                  active ? 'text-accent' : 'text-muted-foreground group-hover:text-foreground',
                 ].join(' ')} />
 
                 <span className={[
@@ -193,8 +185,16 @@ function Sidebar({
           })}
         </nav>
 
-        {/* Bottom: user info + sign out */}
-        <div className="shrink-0 border-t border-white/8 p-3">
+        <div className="shrink-0 border-t border-sidebar-border p-3 space-y-2">
+          <div className={[
+            'flex items-center gap-2 px-1',
+            collapsed ? 'lg:justify-center' : 'justify-between',
+          ].join(' ')}>
+            <span className={['text-[11px] font-medium text-muted-foreground', collapsed ? 'lg:hidden' : ''].join(' ')}>
+              Theme
+            </span>
+            <ThemeToggle variant="dashboard" />
+          </div>
           <div className={[
             'flex items-center gap-3 px-1 py-2',
             collapsed ? 'lg:justify-center' : '',
@@ -203,13 +203,14 @@ function Sidebar({
               <User className="w-4 h-4 text-accent" />
             </div>
             <div className={['min-w-0 flex-1', collapsed ? 'lg:hidden' : ''].join(' ')}>
-              <p className="text-xs font-semibold text-white truncate">{user?.name ?? 'Admin User'}</p>
-              <p className="text-[11px] text-white/40 truncate">{user?.email ?? 'admin@assetflow.com'}</p>
+              <p className="text-xs font-semibold text-sidebar-foreground truncate">{user?.name ?? 'Admin User'}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{user?.email ?? 'admin@assetflow.com'}</p>
             </div>
             <button
               onClick={onSignOut}
               className={[
-                'shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-white/30 hover:text-red-400 hover:bg-white/6 transition-colors',
+                'shrink-0 w-7 h-7 text-muted-foreground hover:text-red-500 hover:bg-muted transition-colors',
+                iconBtn,
                 collapsed ? 'lg:hidden' : '',
               ].join(' ')}
               title="Sign out"
@@ -264,41 +265,41 @@ function Topbar({
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  /* Close dropdowns on route change */
   useEffect(() => {
     setProfileOpen(false)
     setNotiOpen(false)
   }, [pathname])
 
+  const menuItem =
+    'flex items-center gap-2.5 px-4 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors'
+
   return (
-    <header className="sticky top-0 z-30 h-[60px] flex items-center gap-4 border-b border-white/8 bg-[hsl(240_10%_5%)] px-4 sm:px-6">
-      {/* Mobile menu button */}
+    <header className="sticky top-0 z-30 h-[60px] flex items-center gap-4 border-b border-border bg-card px-4 sm:px-6">
       <button
         onClick={onMobileOpen}
-        className="lg:hidden flex items-center justify-center w-8 h-8 rounded-md text-white/50 hover:text-white hover:bg-white/8 transition-colors"
+        className={['lg:hidden w-8 h-8', iconBtn].join(' ')}
       >
         <Menu className="w-5 h-5" />
       </button>
 
-      {/* Breadcrumb */}
       <div className="flex items-center gap-2 min-w-0">
         <Link
           href="/dashboard"
-          className="text-xs text-white/30 hover:text-white/60 transition-colors hidden sm:block"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
         >
           Dashboard
         </Link>
-        <span className="text-xs text-white/20 hidden sm:block">/</span>
-        <h1 className="text-sm font-semibold text-white truncate">{pageTitle}</h1>
+        <span className="text-xs text-muted-foreground/50 hidden sm:block">/</span>
+        <h1 className="text-sm font-semibold text-foreground truncate">{pageTitle}</h1>
       </div>
 
-      {/* Right side */}
       <div className="ml-auto flex items-center gap-2">
-        {/* Notifications popover */}
+        <ThemeToggle variant="dashboard" />
+
         <div className="relative" ref={notiRef}>
           <button
             onClick={() => { setNotiOpen(v => !v); setProfileOpen(false) }}
-            className="relative w-8 h-8 flex items-center justify-center rounded-md text-white/40 hover:text-white hover:bg-white/8 transition-colors"
+            className={['relative w-8 h-8', iconBtn].join(' ')}
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
@@ -306,62 +307,59 @@ function Topbar({
           </button>
 
           {notiOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-white/10 bg-[hsl(240_10%_10%)] shadow-2xl shadow-black/60 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-4 py-3 border-b border-white/8 flex items-center justify-between">
-                <p className="text-xs font-semibold text-white">Notifications</p>
+            <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <p className="text-xs font-semibold text-foreground">Notifications</p>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/20 text-accent font-semibold">3 new</span>
               </div>
-              <div className="divide-y divide-white/5 max-h-[280px] overflow-y-auto">
+              <div className="divide-y divide-border max-h-[280px] overflow-y-auto">
                 {QUICK_NOTIFICATIONS.map((n) => (
-                  <div key={n.id} className={['px-4 py-3 flex items-start gap-3 hover:bg-white/[0.03] transition-colors', n.unread ? '' : 'opacity-55'].join(' ')}>
+                  <div key={n.id} className={['px-4 py-3 flex items-start gap-3 hover:bg-muted transition-colors', n.unread ? '' : 'opacity-55'].join(' ')}>
                     <span className={['w-2 h-2 rounded-full mt-1.5 shrink-0', n.dotColor].join(' ')} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-white/90 leading-relaxed truncate">{n.message}</p>
-                      <p className="text-[10px] text-white/30 mt-0.5">{n.time}</p>
+                      <p className="text-xs text-foreground leading-relaxed truncate">{n.message}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{n.time}</p>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="border-t border-white/8 px-4 py-2.5">
-                {orgId && (
-                  <Link
-                    href={`/dashboard/${orgId}/notifications`}
-                    onClick={() => setNotiOpen(false)}
-                    className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-accent hover:text-accent/80 transition-colors"
-                  >
-                    View all notifications
-                    <ChevronRight className="w-3 h-3" />
-                  </Link>
-                )}
+              <div className="border-t border-border px-4 py-2.5">
+                <Link
+                  href={orgId ? `/dashboard/${orgId}/notifications` : '/dashboard'}
+                  onClick={() => setNotiOpen(false)}
+                  className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-accent hover:text-accent/80 transition-colors"
+                >
+                  View all notifications
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
               </div>
             </div>
           )}
         </div>
 
-        {/* Profile dropdown */}
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setProfileOpen(v => !v)}
-            className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/8 transition-colors"
+            className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
           >
             <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center">
               <User className="w-3.5 h-3.5 text-accent" />
             </div>
-            <span className="hidden sm:block text-xs font-medium text-white/70">{user?.name ?? 'Admin'}</span>
+            <span className="hidden sm:block text-xs font-medium text-muted-foreground">{user?.name ?? 'Admin'}</span>
           </button>
 
           {profileOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-white/10 bg-[hsl(240_10%_10%)] shadow-2xl shadow-black/60 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-4 py-3 border-b border-white/8">
-                <p className="text-xs font-semibold text-white">{user?.name ?? 'Admin User'}</p>
-                <p className="text-[11px] text-white/40 truncate">{user?.email ?? 'admin@assetflow.com'}</p>
+            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-4 py-3 border-b border-border">
+                <p className="text-xs font-semibold text-foreground">{user?.name ?? 'Admin User'}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{user?.email ?? 'admin@assetflow.com'}</p>
               </div>
               <div className="py-1">
                 {orgId ? (
                   <>
                     <Link
                       href={`/dashboard/${orgId}`}
-                      className="flex items-center gap-2.5 px-4 py-2 text-xs text-white/70 hover:bg-white/6 hover:text-white transition-colors"
+                      className={menuItem}
                       onClick={() => setProfileOpen(false)}
                     >
                       <LayoutDashboard className="w-3.5 h-3.5" />
@@ -369,7 +367,7 @@ function Topbar({
                     </Link>
                     <Link
                       href={`/dashboard/${orgId}/setup`}
-                      className="flex items-center gap-2.5 px-4 py-2 text-xs text-white/70 hover:bg-white/6 hover:text-white transition-colors"
+                      className={menuItem}
                       onClick={() => setProfileOpen(false)}
                     >
                       <Settings className="w-3.5 h-3.5" />
@@ -379,7 +377,7 @@ function Topbar({
                 ) : (
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-2.5 px-4 py-2 text-xs text-white/70 hover:bg-white/6 hover:text-white transition-colors"
+                    className={menuItem}
                     onClick={() => setProfileOpen(false)}
                   >
                     <Building2 className="w-3.5 h-3.5" />
@@ -463,7 +461,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(240_10%_4%)] text-white font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans">
       <Sidebar
         collapsed={collapsed}
         onCollapse={() => setCollapsed(v => !v)}
@@ -474,7 +472,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         orgId={orgId}
       />
 
-      {/* Main area shifts right on desktop by sidebar width */}
       <div className={['transition-all duration-300', sidebarW].join(' ')}>
         <Topbar
           onMobileOpen={() => setMobileOpen(true)}

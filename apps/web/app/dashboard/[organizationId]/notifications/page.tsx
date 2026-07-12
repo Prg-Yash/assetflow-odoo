@@ -115,7 +115,7 @@ export default function NotificationsPage() {
   const getFilterStyle = (category: FilterCategory) => {
     const isActive = activeFilter === category
     if (!isActive) {
-      return 'border-white/10 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+      return 'border-border bg-muted text-muted-foreground hover:bg-muted hover:text-foreground'
     }
     // Colored active styles matching mockup + premium vibe
     const styles: Record<FilterCategory, string> = {
@@ -133,14 +133,14 @@ export default function NotificationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Notifications</h2>
+            <h2 className="text-2xl font-bold text-foreground tracking-tight">Notifications</h2>
             {unreadCount > 0 && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent text-primary-foreground animate-pulse">
                 {unreadCount} new
               </span>
             )}
           </div>
-          <p className="text-sm text-white/40">
+          <p className="text-sm text-muted-foreground">
             Activity logs, alerts, asset bookings and pending approvals.
           </p>
         </div>
@@ -148,7 +148,7 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="inline-flex items-center gap-2 rounded-lg bg-white/5 border border-white/8 hover:bg-white/10 hover:text-white px-4 py-2.5 text-xs font-semibold text-white/80 transition-all shrink-0 active:scale-[0.98]"
+            className="inline-flex items-center gap-2 rounded-lg bg-card border border-border hover:bg-muted hover:text-foreground px-4 py-2.5 text-xs font-semibold text-foreground/80 transition-all shrink-0 active:scale-[0.98]"
           >
             <CheckCheck className="w-4 h-4 text-emerald-400" /> Mark all read
           </button>
@@ -156,7 +156,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* Filter Tabs (Matches Mockup) */}
-      <div className="flex flex-wrap gap-2.5 pb-2 border-b border-white/5">
+      <div className="flex flex-wrap gap-2.5 pb-2 border-b border-border">
         {(['all', 'alerts', 'approvals', 'bookings'] as FilterCategory[]).map((cat) => (
           <button
             key={cat}
@@ -172,15 +172,15 @@ export default function NotificationsPage() {
       </div>
 
       {/* Activity Logs / Notifications list */}
-      <div className="rounded-2xl border border-white/8 bg-[hsl(240_10%_8%)] shadow-xl overflow-hidden divide-y divide-white/5">
+      <div className="rounded-2xl border border-border bg-card shadow-xl overflow-hidden divide-y divide-border">
         {filteredItems.length === 0 ? (
           <div className="px-6 py-16 text-center">
             <div className="space-y-3">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/5 mx-auto">
-                <Bell className="w-7 h-7 text-white/20" />
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-card border border-border mx-auto">
+                <Bell className="w-7 h-7 text-foreground/20" />
               </div>
-              <p className="text-sm text-white/40 font-semibold">No logs in this category</p>
-              <p className="text-xs text-white/25">Check back later for system activities.</p>
+              <p className="text-sm text-muted-foreground font-semibold">No logs in this category</p>
+              <p className="text-xs text-muted-foreground/70">Check back later for system activities.</p>
             </div>
           </div>
         ) : (
@@ -191,7 +191,7 @@ export default function NotificationsPage() {
                 key={item.id}
                 className={[
                   'px-6 py-5 flex items-center justify-between gap-4 transition-all duration-200 group relative',
-                  item.read ? 'opacity-55 hover:opacity-90' : 'bg-white/[0.01]',
+                  item.read ? 'opacity-55 hover:opacity-90' : 'bg-muted',
                 ].join(' ')}
               >
                 {/* Unread indicator left bar */}
@@ -206,19 +206,19 @@ export default function NotificationsPage() {
                   <span className={['w-2 h-2 rounded-full shrink-0', item.dotColor].join(' ')} />
 
                   {/* Icon */}
-                  <div className="hidden sm:flex w-8 h-8 rounded-lg bg-white/5 border border-white/5 items-center justify-center text-white/50 group-hover:text-white/80 transition-colors shrink-0">
+                  <div className="hidden sm:flex w-8 h-8 rounded-lg bg-card border border-border items-center justify-center text-muted-foreground group-hover:text-foreground/80 transition-colors shrink-0">
                     <Icon className="w-4 h-4" />
                   </div>
 
                   {/* Notification text */}
-                  <p className="text-sm text-white/95 leading-relaxed truncate pr-4">
+                  <p className="text-sm text-foreground/95 leading-relaxed truncate pr-4">
                     {item.message}
                   </p>
                 </div>
 
                 {/* Right side: time & actions */}
                 <div className="flex items-center gap-4 shrink-0">
-                  <span className="text-xs text-white/35 font-medium tabular-nums group-hover:hidden">
+                  <span className="text-xs text-foreground/35 font-medium tabular-nums group-hover:hidden">
                     {item.time}
                   </span>
 
@@ -226,14 +226,14 @@ export default function NotificationsPage() {
                   <div className="hidden group-hover:flex items-center gap-1.5 animate-in fade-in duration-100">
                     <button
                       onClick={() => toggleRead(item.id)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/8 transition-colors"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                       title={item.read ? 'Mark as unread' : 'Mark as read'}
                     >
                       <Check className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => deleteNotification(item.id)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-white/45 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-foreground/45 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                       title="Delete activity log"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -248,9 +248,9 @@ export default function NotificationsPage() {
       </div>
 
       {/* Info banner */}
-      <div className="rounded-xl border border-white/8 bg-white/[0.01] p-4 flex gap-3 items-start">
-        <Bell className="w-4 h-4 text-white/30 mt-0.5 shrink-0" />
-        <p className="text-xs text-white/40 leading-relaxed">
+      <div className="rounded-xl border border-border bg-card p-4 flex gap-3 items-start">
+        <Bell className="w-4 h-4 text-muted-foreground/80 mt-0.5 shrink-0" />
+        <p className="text-xs text-muted-foreground leading-relaxed">
           This log contains all automated status changes, manual resource reservations, asset allocation confirmations, and audit events.
         </p>
       </div>

@@ -21,7 +21,7 @@ export default function AppTabs() {
       <TabSlot style={{ height: '100%', backgroundColor: NeoColors.background }} />
       <TabList asChild>
         <CustomTabList>
-          <TabTrigger name="index" href="/(tabs)/index" asChild>
+          <TabTrigger name="index" href={'/(tabs)/index' as any} asChild>
             <TabButton icon="🏠">Overview</TabButton>
           </TabTrigger>
           <TabTrigger name="assets" href="/(tabs)/assets" asChild>

@@ -6,6 +6,8 @@ import { useRouter } from 'expo-router';
 import { NeoButton } from '@/components/neo/NeoButton';
 import { NeoColors, Spacing } from '@/constants/theme';
 
+import { apiFetch, setToken } from '@/lib/api';
+
 export default function RegisterScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -14,18 +16,30 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name || !email || !password) {
       Alert.alert('Error', 'Please fill in all fields.');
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    
+    try {
+      const res = await apiFetch('/api/v1/auth/sign-up/email', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password }),
+      });
+      
+      // better-auth might return the token in res.token or cookie.
+      if (res.token) await setToken(res.token);
+      
       Alert.alert('Account Created!', 'Your employee account is ready. Admin roles will be assigned by your org admin.', [
         { text: 'Go to Login', onPress: () => router.replace('/auth/login') }
       ]);
-    }, 1500);
+    } catch (err: any) {
+      Alert.alert('Registration Failed', err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStrength = (pw: string) => {

@@ -1,619 +1,291 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Platform,
-  Alert,
+  StyleSheet, Text, View, ScrollView, TouchableOpacity,
+  ActivityIndicator, RefreshControl, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
-import { NeoHeader } from '@/components/neo/NeoHeader';
-import { NeoQuickNav } from '@/components/neo/NeoQuickNav';
 import { NeoCard } from '@/components/neo/NeoCard';
 import { NeoBadge } from '@/components/neo/NeoBadge';
-import { NeoButton } from '@/components/neo/NeoButton';
-import { NeoColors, Spacing, BottomTabInset } from '@/constants/theme';
+import { NeoColors, Spacing } from '@/constants/theme';
+import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
-export default function HomeScreen() {
+interface DashboardMetrics {
+  totalAssetsCount: number;
+  totalAssetValuation: number;
+  activeAllocationsCount: number;
+  assetsInMaintenanceCount: number;
+  pendingTransfersCount: number;
+  openAuditAlerts: number;
+}
+
+interface OverdueItem {
+  id: string;
+  assetName: string;
+  assetCode: string;
+  employeeName: string;
+  expectedReturn: string;
+  daysOverdue?: number;
+}
+
+interface RecentActivity {
+  id: string;
+  action: string;
+  entity: string;
+  entityId: string;
+  createdAt: string;
+  metadata?: any;
+  user?: { name: string; email: string };
+}
+
+interface StatusDistribution {
+  status: string;
+  count: number;
+  percentage: number;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  AVAILABLE: '#10B981',
+  ALLOCATED: '#3B82F6',
+  UNDER_MAINTENANCE: '#F59E0B',
+  IN_AUDIT: '#8B5CF6',
+  LOST: '#EF4444',
+  DAMAGED: '#F97316',
+  RETIRED: '#6B7280',
+  DISPOSED: '#374151',
+  RESERVED: '#06B6D4',
+};
+
+function formatCurrency(v: number) {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+export default function DashboardScreen() {
   const router = useRouter();
-  const [activeQuickTab, setActiveQuickTab] = useState('assets');
+  const { activeOrg, user } = useAuth();
 
-  const handleQuickNavSelect = (id: string) => {
-    setActiveQuickTab(id);
-    if (id === 'assets') router.push('/assets');
-    else if (id === 'bookings') router.push('/bookings');
-    else if (id === 'audit') router.push('/audit');
-    else if (id === 'maintenance' || id === 'transfers' || id === 'ecard') router.push('/more');
-    else if (id === 'qr') router.push('/qr-scanner');
-  };
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [overdue, setOverdue] = useState<OverdueItem[]>([]);
+  const [activities, setActivities] = useState<RecentActivity[]>([]);
+  const [statusDist, setStatusDist] = useState<StatusDistribution[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchAll = useCallback(async () => {
+    try {
+      const [metricsRes, overdueRes, activitiesRes, distRes] = await Promise.all([
+        apiFetch<{ data: DashboardMetrics }>('/api/v1/dashboard/metrics'),
+        apiFetch<{ data: OverdueItem[] }>('/api/v1/dashboard/overdue'),
+        apiFetch<{ data: RecentActivity[] }>('/api/v1/dashboard/recent-activities'),
+        apiFetch<{ data: StatusDistribution[] }>('/api/v1/dashboard/asset-status-distribution'),
+      ]);
+      if (metricsRes?.data) setMetrics(metricsRes.data);
+      if (overdueRes?.data) setOverdue(overdueRes.data);
+      if (activitiesRes?.data) setActivities(activitiesRes.data);
+      if (distRes?.data) setStatusDist(distRes.data);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const onRefresh = () => { setRefreshing(true); fetchAll(); };
+
+  const KpiCard = ({ label, value, icon, color }: { label: string; value: string; icon: string; color: string }) => (
+    <NeoCard style={styles.kpiCard}>
+      <Text style={styles.kpiIcon}>{icon}</Text>
+      <Text style={[styles.kpiValue, { color }]}>{value}</Text>
+      <Text style={styles.kpiLabel}>{label}</Text>
+    </NeoCard>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={NeoColors.primary} />
+          <Text style={styles.loadingTxt}>Loading Dashboard...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView
-        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={NeoColors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top App Bar with Title & QR Scan Action */}
-        <View style={styles.topBar}>
+        {/* Header */}
+        <View style={styles.topRow}>
           <View>
-            <Text style={styles.appName}>AssetFlow</Text>
-            <Text style={styles.appTagline}>Enterprise Intelligence</Text>
+            <Text style={styles.greeting}>Good morning 👋</Text>
+            <Text style={styles.orgName}>{activeOrg?.name || 'Your Organization'}</Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => router.push('/qr-scanner')}
-            style={styles.qrScanButton}
-          >
-            <Text style={styles.qrScanIcon}>[ QR ]</Text>
+          <TouchableOpacity onPress={() => router.push('/organizations')} style={styles.orgSwitchBtn}>
+            <Text style={styles.orgSwitchTxt}>Switch</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Hero Top Section (Matches Welcome Back + Status Pill + Card in Screenshot) */}
-        <NeoHeader
-          userName="Priya Shah"
-          userRole="Engineering Team Lead — Mumbai HQ"
-          pendingCount={3}
-          pendingLabel="You have 3 pending asset requests"
-          onPressPending={() => router.push('/more')}
-          cardTitle="2 Overdue Check-In Assets"
-          cardSubtitle="Due in 2 days — Immediate verification required"
-          cardValue="$2,450.00"
-          cardButtonLabel="View Assets"
-          onPressCardButton={() => router.push('/assets')}
-          avatarInitials="PS"
-        />
-
-        {/* Quick Action Navigation Pills (Matches Horizontal Pills in Screenshot) */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Services & Modules</Text>
-          <TouchableOpacity onPress={() => router.push('/assets')}>
-            <Text style={styles.viewAllText}>View All ›</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.quickNavWrapper}>
-          <NeoQuickNav
-            activeId={activeQuickTab}
-            onSelect={handleQuickNavSelect}
-            items={[
-              { id: 'assets', label: 'Assets', badgeCount: 128 },
-              { id: 'bookings', label: 'Bookings', badgeCount: 9 },
-              { id: 'audit', label: 'Audit Run', badgeCount: 3 },
-              { id: 'qr', label: 'QR Scan' },
-              { id: 'maintenance', label: 'Repairs', badgeCount: 4 },
-              { id: 'transfers', label: 'Transfers', badgeCount: 3 },
-              { id: 'ecard', label: 'e-Card' },
-            ]}
-          />
-        </View>
-
-        {/* Stacked Neo-morphic Cards matching the screenshot ('Hospitals', 'Events', 'e-Cards', 'Teleconsult') */}
-
-        {/* Card 1: Featured Asset Detail (Matches 'Hospitals / Harmony General Hospital' Card) */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Featured Assets</Text>
-          <TouchableOpacity onPress={() => router.push('/assets')}>
-            <Text style={styles.viewAllText}>Catalog ›</Text>
-          </TouchableOpacity>
-        </View>
-        <NeoCard glow orangeBorder style={styles.featuredCard}>
-          <View style={styles.cardTopRow}>
-            <NeoBadge label="Electronics & IT" variant="orange" />
-            <NeoBadge label="Allocated" variant="info" />
+        {/* Role badge */}
+        {activeOrg?.role && (
+          <View style={styles.roleBadgeRow}>
+            <NeoBadge label={activeOrg.role.replace(/_/g, ' ')} variant="warning" />
+            <Text style={styles.roleSub}>{user?.email}</Text>
           </View>
+        )}
 
-          {/* Graphic Placeholder matching the modern architectural preview in screenshot */}
-          <View style={styles.graphicPreviewBox}>
-            <View style={styles.graphicInner}>
-              <Text style={styles.graphicTagText}>[ PRO HARDWARE UNIT ]</Text>
-              <Text style={styles.graphicTitleText}>MacBook Pro 16" — M3 Max</Text>
-              <Text style={styles.graphicSerialText}>SN: MB-2024-0078 | Tag: AF-0078</Text>
-            </View>
+        {/* KPI Grid */}
+        {metrics && (
+          <View style={styles.kpiGrid}>
+            <KpiCard label="Total Assets" value={String(metrics.totalAssetsCount)} icon="📦" color="#FFFFFF" />
+            <KpiCard label="Valuation" value={formatCurrency(metrics.totalAssetValuation)} icon="💰" color="#10B981" />
+            <KpiCard label="Allocated" value={String(metrics.activeAllocationsCount)} icon="🔑" color="#3B82F6" />
+            <KpiCard label="Maintenance" value={String(metrics.assetsInMaintenanceCount)} icon="🛠️" color="#F59E0B" />
+            <KpiCard label="Transfers" value={String(metrics.pendingTransfersCount)} icon="🔄" color="#8B5CF6" />
+            <KpiCard label="Audit Alerts" value={String(metrics.openAuditAlerts)} icon="⚡" color="#EF4444" />
           </View>
+        )}
 
-          <View style={styles.assetInfoSection}>
-            <Text style={styles.assetCardTitle}>MacBook Pro 16" Laptop</Text>
-            <Text style={styles.assetCardSubtitle}>📍 Assigned to: Rohan Mehta (Engineering)</Text>
-            <Text style={styles.assetCardDetails}>🏢 Location: Mumbai HQ — Floor 4 | Dept: Engineering</Text>
+        {/* Asset Status Distribution */}
+        {statusDist.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Asset Status Breakdown</Text>
+            <NeoCard style={styles.distCard}>
+              {statusDist.map((s) => (
+                <View key={s.status} style={styles.distRow}>
+                  <View style={styles.distLeft}>
+                    <View style={[styles.distDot, { backgroundColor: STATUS_COLORS[s.status] || '#6B7280' }]} />
+                    <Text style={styles.distLabel}>{s.status.replace(/_/g, ' ')}</Text>
+                  </View>
+                  <View style={styles.distRight}>
+                    <Text style={styles.distCount}>{s.count}</Text>
+                    <Text style={styles.distPct}>{s.percentage?.toFixed(1) ?? 0}%</Text>
+                  </View>
+                </View>
+              ))}
+            </NeoCard>
           </View>
+        )}
 
-          <View style={styles.cardActionsRow}>
-            <NeoButton
-              label="↗ Check-In / Inspect"
-              variant="primary"
-              style={styles.actionBtnPrimary}
-              onPress={() => router.push('/assets')}
-            />
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => Alert.alert('Custodian Contact', 'Calling Rohan Mehta (+91 98765 43210)...')}
-              style={styles.circleBtn}
-            >
-              <Text style={styles.circleBtnText}>📞</Text>
+        {/* Overdue Returns */}
+        {overdue.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>⚠️ Overdue Returns ({overdue.length})</Text>
+            {overdue.slice(0, 5).map((item) => (
+              <NeoCard key={item.id} style={styles.overdueCard}>
+                <View style={styles.overdueTop}>
+                  <View>
+                    <Text style={styles.overdueAsset}>{item.assetName}</Text>
+                    <Text style={styles.overdueCode}>{item.assetCode}</Text>
+                  </View>
+                  <NeoBadge label="OVERDUE" variant="danger" />
+                </View>
+                <Text style={styles.overdueEmployee}>📋 {item.employeeName}</Text>
+                <Text style={styles.overdueDate}>Due: {formatDate(item.expectedReturn)}</Text>
+              </NeoCard>
+            ))}
+          </View>
+        )}
+
+        {/* Recent Activities */}
+        {activities.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            {activities.slice(0, 8).map((act) => (
+              <View key={act.id} style={styles.activityRow}>
+                <View style={styles.activityDot} />
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityAction}>{act.action.replace(/_/g, ' ')}</Text>
+                  <Text style={styles.activityMeta}>
+                    {act.entity} • {act.user?.name ?? 'System'} • {formatDate(act.createdAt)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickGrid}>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/assets')} style={styles.quickBtn}>
+              <Text style={styles.quickIcon}>📦</Text>
+              <Text style={styles.quickLabel}>Assets</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => router.push('/audit')}
-              style={styles.circleBtn}
-            >
-              <Text style={styles.circleBtnText}>⚡</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/bookings')} style={styles.quickBtn}>
+              <Text style={styles.quickIcon}>📅</Text>
+              <Text style={styles.quickLabel}>Bookings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/audit')} style={styles.quickBtn}>
+              <Text style={styles.quickIcon}>⚡</Text>
+              <Text style={styles.quickLabel}>Audit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/qr-scanner')} style={styles.quickBtn}>
+              <Text style={styles.quickIcon}>📷</Text>
+              <Text style={styles.quickLabel}>QR Scan</Text>
             </TouchableOpacity>
           </View>
-        </NeoCard>
-
-        {/* Card 2: Digital e-Card Section (Matches 'e-Cards' orange gradient card from screenshot) */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Digital e-Card & Quick ID</Text>
-          <TouchableOpacity onPress={() => router.push('/more')}>
-            <Text style={styles.viewAllText}>Pass ›</Text>
-          </TouchableOpacity>
         </View>
-        <View style={styles.eCardWrapper}>
-          <View style={styles.eCard}>
-            <View style={styles.eCardHeader}>
-              <Text style={styles.eCardTag}>ASSET CUSTODIAN PASS</Text>
-              <Text style={styles.eCardId}>AF-EMP-2026-PS</Text>
-            </View>
-
-            <View style={styles.eCardBody}>
-              <View style={styles.eCardAvatar}>
-                <Text style={styles.eCardAvatarText}>PS</Text>
-              </View>
-              <View style={styles.eCardUserInfo}>
-                <Text style={styles.eCardUserName}>Priya Shah</Text>
-                <Text style={styles.eCardUserRole}>Senior Engineering Lead</Text>
-                <Text style={styles.eCardUserDept}>Department: Engineering & Cloud</Text>
-              </View>
-            </View>
-
-            <View style={styles.eCardFooter}>
-              <View>
-                <Text style={styles.eCardStatLabel}>ASSIGNED ASSETS</Text>
-                <Text style={styles.eCardStatValue}>12 Units</Text>
-              </View>
-              <View>
-                <Text style={styles.eCardStatLabel}>TOTAL VALUE</Text>
-                <Text style={styles.eCardStatValue}>$18,450.00</Text>
-              </View>
-              <View>
-                <Text style={styles.eCardStatLabel}>AUDIT SCORE</Text>
-                <Text style={styles.eCardStatValueOrange}>100% Verified</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Card 3: Events & Active Bookings (Matches 'Events' split grid from screenshot) */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Active Reservations & Bookings</Text>
-          <TouchableOpacity onPress={() => router.push('/bookings')}>
-            <Text style={styles.viewAllText}>Book Room ›</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.eventsGrid}>
-          <TouchableOpacity
-            activeOpacity={0.88}
-            onPress={() => router.push('/bookings')}
-            style={[styles.eventBox, styles.eventBoxLeft]}
-          >
-            <NeoBadge label="Confirmed Room" variant="success" />
-            <Text style={styles.eventTitle}>Conference room B2 — Orion</Text>
-            <Text style={styles.eventSub}>Today | 2:00 PM – 3:00 PM</Text>
-            <Text style={styles.eventFoot}>📍 HQ Floor 2 — Meeting Wing</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.88}
-            onPress={() => router.push('/bookings')}
-            style={[styles.eventBox, styles.eventBoxRight]}
-          >
-            <NeoBadge label="Equipment" variant="info" />
-            <Text style={styles.eventTitle}>Projector A & Van #1</Text>
-            <Text style={styles.eventSub}>Booked for Field Ops</Text>
-            <Text style={styles.eventFoot}>⚠️ 1 Schedule Conflict Alert</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Card 4: Latest Maintenance Work Order (Matches 'Latest Teleconsult' from screenshot) */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Latest Maintenance & Repairs</Text>
-          <TouchableOpacity onPress={() => router.push('/more')}>
-            <Text style={styles.viewAllText}>Requests ›</Text>
-          </TouchableOpacity>
-        </View>
-        <NeoCard style={styles.teleconsultCard}>
-          <View style={styles.teleHeader}>
-            <View style={styles.teleAvatar}>
-              <Text style={styles.teleAvatarText}>PJ</Text>
-            </View>
-            <View style={styles.teleInfo}>
-              <Text style={styles.teleTitle}>Projector AF-0062 — HQ Floor 2</Text>
-              <View style={styles.teleRow}>
-                <NeoBadge label="In Progress" variant="warning" />
-                <Text style={styles.teleDate}>Priority: Medium | Est: $120</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.teleChecklist}>
-            <View style={styles.checkRow}>
-              <Text style={styles.checkIcon}>✔</Text>
-              <Text style={styles.checkText}>Issue reported: Lamp replacement required. Dim display.</Text>
-            </View>
-            <View style={styles.checkRow}>
-              <Text style={styles.checkIcon}>✔</Text>
-              <Text style={styles.checkText}>Technician assigned: Rohan Mehta (Est. completion tomorrow)</Text>
-            </View>
-          </View>
-        </NeoCard>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: NeoColors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: BottomTabInset + Spacing.five,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  appName: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-  },
-  appTagline: {
-    fontSize: 11,
-    color: NeoColors.primary,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  qrScanButton: {
-    backgroundColor: 'rgba(255, 102, 0, 0.18)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: NeoColors.primary,
-  },
-  qrScanIcon: {
-    color: NeoColors.primary,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 18,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    color: '#FFFFFF',
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  viewAllText: {
-    fontSize: 13,
-    color: NeoColors.primary,
-    fontWeight: '700',
-  },
-  quickNavWrapper: {
-    marginHorizontal: -Spacing.four,
-  },
-  featuredCard: {
-    padding: 20,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  graphicPreviewBox: {
-    height: 140,
-    borderRadius: 18,
-    backgroundColor: '#11141E',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 102, 0, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  graphicInner: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  graphicTagText: {
-    fontSize: 10,
-    color: NeoColors.primary,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    marginBottom: 6,
-  },
-  graphicTitleText: {
-    fontSize: 18,
-    color: '#FFFFFF',
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  graphicSerialText: {
-    fontSize: 12,
-    color: '#A0A6B2',
-    fontWeight: '600',
-  },
-  assetInfoSection: {
-    marginBottom: 18,
-  },
-  assetCardTitle: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  assetCardSubtitle: {
-    fontSize: 13,
-    color: '#A0A6B2',
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  assetCardDetails: {
-    fontSize: 12,
-    color: '#687082',
-    fontWeight: '500',
-  },
-  cardActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  actionBtnPrimary: {
-    flex: 1,
-  },
-  circleBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#252A3E',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  circleBtnText: {
-    fontSize: 18,
-  },
-  eCardWrapper: {
-    width: '100%',
-  },
-  eCard: {
-    backgroundColor: '#FF6600',
-    borderRadius: 28,
-    padding: 22,
-    borderWidth: 1.5,
-    borderColor: '#FF8533',
-    ...Platform.select({
-      ios: {
-        shadowColor: NeoColors.primary,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.45,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 14,
-      },
-      web: {
-        boxShadow: '0 15px 45px rgba(255, 102, 0, 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.25)',
-      } as any,
-    }),
-  },
-  eCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  eCardTag: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 1.2,
-  },
-  eCardId: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    opacity: 0.9,
-  },
-  eCardBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    padding: 16,
-    borderRadius: 20,
-  },
-  eCardAvatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  eCardAvatarText: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: NeoColors.primary,
-  },
-  eCardUserInfo: {
-    flex: 1,
-  },
-  eCardUserName: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  eCardUserRole: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFEACC',
-    marginTop: 2,
-  },
-  eCardUserDept: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    opacity: 0.8,
-    marginTop: 2,
-  },
-  eCardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.25)',
-    paddingTop: 14,
-  },
-  eCardStatLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    opacity: 0.8,
-  },
-  eCardStatValue: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    marginTop: 2,
-  },
-  eCardStatValueOrange: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    marginTop: 2,
-  },
-  eventsGrid: {
-    flexDirection: 'row',
-    gap: 14,
-  },
-  eventBox: {
-    flex: 1,
-    backgroundColor: '#161923',
-    borderRadius: 22,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#252A3E',
-  },
-  eventBoxLeft: {
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-  },
-  eventBoxRight: {
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-  },
-  eventTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  eventSub: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#A0A6B2',
-    marginBottom: 8,
-  },
-  eventFoot: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#687082',
-  },
-  teleconsultCard: {
-    padding: 18,
-  },
-  teleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  teleAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 18,
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#F59E0B',
-    marginRight: 14,
-  },
-  teleAvatarText: {
-    color: '#F59E0B',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  teleInfo: {
-    flex: 1,
-  },
-  teleTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 6,
-  },
-  teleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  teleDate: {
-    fontSize: 12,
-    color: '#A0A6B2',
-    fontWeight: '600',
-  },
-  teleChecklist: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 16,
-    padding: 14,
-    gap: 10,
-  },
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkIcon: {
-    color: NeoColors.primary,
-    fontSize: 14,
-    fontWeight: '900',
-    marginRight: 10,
-  },
-  checkText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#E5E7EB',
-    fontWeight: '500',
-  },
+  safeArea: { flex: 1, backgroundColor: NeoColors.background },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  loadingTxt: { color: '#A0A6B2', fontSize: 14 },
+  scrollContent: { paddingHorizontal: Spacing.four, paddingBottom: 120 },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, marginBottom: 8 },
+  greeting: { fontSize: 13, color: '#A0A6B2', fontWeight: '500' },
+  orgName: { fontSize: 20, fontWeight: '900', color: '#FFFFFF', marginTop: 2 },
+  orgSwitchBtn: { backgroundColor: 'rgba(255,102,0,0.12)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,102,0,0.3)' },
+  orgSwitchTxt: { color: NeoColors.primary, fontSize: 12, fontWeight: '800' },
+  roleBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  roleSub: { fontSize: 11, color: '#687082', fontWeight: '500' },
+  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
+  kpiCard: { width: '30.5%', padding: 14, alignItems: 'center' },
+  kpiIcon: { fontSize: 22, marginBottom: 6 },
+  kpiValue: { fontSize: 20, fontWeight: '900', marginBottom: 2 },
+  kpiLabel: { fontSize: 10, color: '#A0A6B2', fontWeight: '700', textAlign: 'center', letterSpacing: 0.3 },
+  section: { marginTop: 20 },
+  sectionTitle: { fontSize: 13, fontWeight: '800', color: '#8E96A4', letterSpacing: 0.6, marginBottom: 10 },
+  distCard: { padding: 16 },
+  distRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 },
+  distLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  distDot: { width: 10, height: 10, borderRadius: 5 },
+  distLabel: { fontSize: 13, color: '#FFFFFF', fontWeight: '600' },
+  distRight: { flexDirection: 'row', gap: 12 },
+  distCount: { fontSize: 14, fontWeight: '800', color: '#FFFFFF', minWidth: 30, textAlign: 'right' },
+  distPct: { fontSize: 12, color: '#A0A6B2', fontWeight: '600', minWidth: 42, textAlign: 'right' },
+  overdueCard: { padding: 14, marginBottom: 10 },
+  overdueTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
+  overdueAsset: { fontSize: 15, fontWeight: '800', color: '#FFFFFF', marginBottom: 2 },
+  overdueCode: { fontSize: 11, color: '#A0A6B2' },
+  overdueEmployee: { fontSize: 13, color: '#A0A6B2', marginBottom: 4 },
+  overdueDate: { fontSize: 12, color: NeoColors.danger },
+  activityRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  activityDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: NeoColors.primary, marginTop: 5 },
+  activityContent: { flex: 1 },
+  activityAction: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', marginBottom: 2, textTransform: 'capitalize' },
+  activityMeta: { fontSize: 11, color: '#687082' },
+  quickGrid: { flexDirection: 'row', gap: 10 },
+  quickBtn: { flex: 1, backgroundColor: '#161923', borderRadius: 16, paddingVertical: 18, alignItems: 'center', borderWidth: 1, borderColor: '#252A3E' },
+  quickIcon: { fontSize: 24, marginBottom: 6 },
+  quickLabel: { fontSize: 11, color: '#A0A6B2', fontWeight: '700' },
 });

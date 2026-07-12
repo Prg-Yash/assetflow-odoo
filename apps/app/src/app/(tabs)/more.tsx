@@ -1,14 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  Alert,
-  Platform,
+  StyleSheet, Text, View, ScrollView, TouchableOpacity,
+  TextInput, ActivityIndicator, RefreshControl, Alert, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -16,414 +9,448 @@ import { useRouter } from 'expo-router';
 import { NeoCard } from '@/components/neo/NeoCard';
 import { NeoBadge, BadgeVariant } from '@/components/neo/NeoBadge';
 import { NeoButton } from '@/components/neo/NeoButton';
-import { NeoColors, Spacing, BottomTabInset } from '@/constants/theme';
+import { NeoColors, Spacing } from '@/constants/theme';
+import { apiFetch, clearToken } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
-type TabSubSection = 'maintenance' | 'transfers' | 'ecard' | 'settings';
-type MaintenanceStatus = 'Pending Approval' | 'In Progress' | 'Completed' | 'Rejected';
-type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
+type SubSection = 'maintenance' | 'transfers' | 'notifications' | 'settings';
 
 interface MaintenanceRequest {
   id: string;
-  assetTag: string;
-  assetName: string;
-  requestedBy: string;
   issue: string;
-  priority: Priority;
-  status: MaintenanceStatus;
-  cost?: number;
-  date: string;
-}
-
-interface TransferRecord {
-  id: string;
-  tag: string;
-  name: string;
-  fromDept: string;
-  toDept: string;
-  custodian: string;
+  priority: string;
   status: string;
-  date: string;
+  openedAt: string;
+  cost?: number;
+  asset?: { assetCode: string; name: string };
+  raisedBy?: { name: string };
+  assignedTo?: { name: string };
 }
 
-const INITIAL_MAINTENANCE: MaintenanceRequest[] = [
-  { id: 'm1', assetTag: 'AF-0062', assetName: '4K Laser Projector', requestedBy: 'Rohan Mehta', issue: 'Lamp replacement required. Image is dim.', priority: 'Medium', status: 'In Progress', cost: 120, date: '2026-07-10' },
-  { id: 'm2', assetTag: 'AF-0012', assetName: 'Dell Laptop XPS 15', requestedBy: 'Priya Shah', issue: 'Keyboard keys not working (A, S, D). Water spill.', priority: 'High', status: 'Pending Approval', date: '2026-07-12' },
-  { id: 'm3', assetTag: 'AF-0078', assetName: 'MacBook Pro 16" M3 Max', requestedBy: 'System Audit', issue: 'Battery health degraded below 70%. Swelling observed.', priority: 'Critical', status: 'Completed', cost: 240, date: '2026-07-05' },
-  { id: 'm4', assetTag: 'AF-0310', assetName: 'Toyota Innova Hybrid', requestedBy: 'Sana Iqbal', issue: 'Scheduled engine oil change and brake inspection.', priority: 'Low', status: 'Pending Approval', date: '2026-07-11' },
-];
+interface Transfer {
+  id: string;
+  status: string;
+  reason?: string;
+  createdAt: string;
+  asset?: { assetCode: string; name: string };
+  fromEmployee?: { user?: { name: string }; employeeCode: string };
+  toEmployee?: { user?: { name: string }; employeeCode: string };
+}
 
-const INITIAL_TRANSFERS: TransferRecord[] = [
-  { id: 't1', tag: 'AF-0114', name: 'Dell Laptop XPS 15', fromDept: 'IT Pool', toDept: 'Engineering', custodian: 'Priya Shah', status: 'Completed', date: 'Jul 12, 2026' },
-  { id: 't2', tag: 'AF-0201', name: 'Ergonomic Office Chair', fromDept: 'Facilities Wing', toDept: 'Executive Suite', custodian: 'Rohan Mehta', status: 'Pending Custodian Sign-off', date: 'Jul 11, 2026' },
-  { id: 't3', tag: 'AF-0310', name: 'Toyota Innova Hybrid', fromDept: 'Pool Fleet', toDept: 'Field Ops', custodian: 'Sana Iqbal', status: 'Completed', date: 'Jul 08, 2026' },
-];
+interface Notification {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+}
+
+const PRIORITY_BADGE: Record<string, BadgeVariant> = {
+  LOW: 'neutral', MEDIUM: 'warning', HIGH: 'danger', CRITICAL: 'danger',
+};
+const STATUS_BADGE: Record<string, BadgeVariant> = {
+  OPEN: 'warning', APPROVED: 'info', ASSIGNED: 'info', IN_PROGRESS: 'info',
+  RESOLVED: 'success', REJECTED: 'danger', CLOSED: 'neutral',
+  PENDING: 'warning', COMPLETED: 'success', CANCELLED: 'neutral',
+};
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 export default function MoreScreen() {
   const router = useRouter();
-  const [activeSub, setActiveSub] = useState<TabSubSection>('maintenance');
-  const [maintenanceList, setMaintenanceList] = useState<MaintenanceRequest[]>(INITIAL_MAINTENANCE);
-  const [transferList, setTransferList] = useState<TransferRecord[]>(INITIAL_TRANSFERS);
+  const { user, activeOrg, signOut } = useAuth();
+  const [activeSub, setActiveSub] = useState<SubSection>('maintenance');
 
-  // Maintenance form state
-  const [modalVisible, setModalVisible] = useState(false);
-  const [mTag, setMTag] = useState('AF-0012');
-  const [mName, setMName] = useState('Dell Laptop XPS 15');
-  const [mIssue, setMIssue] = useState('');
-  const [mPriority, setMPriority] = useState<Priority>('High');
+  // Maintenance
+  const [maintenance, setMaintenance] = useState<MaintenanceRequest[]>([]);
+  const [maintLoading, setMaintLoading] = useState(false);
 
-  const getPriorityVariant = (p: Priority): BadgeVariant => {
-    switch (p) {
-      case 'Critical': return 'danger';
-      case 'High': return 'warning';
-      case 'Medium': return 'info';
-      case 'Low': return 'neutral';
-    }
-  };
+  // Transfers
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [transfersLoading, setTransfersLoading] = useState(false);
 
-  const getStatusVariant = (st: MaintenanceStatus): BadgeVariant => {
-    switch (st) {
-      case 'Completed': return 'success';
-      case 'In Progress': return 'info';
-      case 'Pending Approval': return 'warning';
-      case 'Rejected': return 'danger';
-    }
-  };
+  // Notifications
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const handleCreateRepair = () => {
-    if (!mIssue.trim()) {
-      Alert.alert('Validation Error', 'Please describe the maintenance or repair issue.');
+  // Create Maintenance Modal
+  const [maintModal, setMaintModal] = useState(false);
+  const [creatingMaint, setCreatingMaint] = useState(false);
+  const [maintForm, setMaintForm] = useState({ assetId: '', issue: '', priority: 'MEDIUM', estimatedCost: '' });
+
+  // Transfer Modal
+  const [transferModal, setTransferModal] = useState(false);
+  const [creatingTransfer, setCreatingTransfer] = useState(false);
+  const [transferForm, setTransferForm] = useState({ assetId: '', fromEmployeeId: '', toEmployeeId: '', reason: '' });
+
+  // Load data per sub-section
+  const loadMaintenance = useCallback(async () => {
+    setMaintLoading(true);
+    try {
+      const res = await apiFetch<{ data: MaintenanceRequest[] }>('/api/v1/maintenance');
+      if (res?.data) setMaintenance(res.data);
+    } catch (err: any) { Alert.alert('Error', err.message); }
+    finally { setMaintLoading(false); }
+  }, []);
+
+  const loadTransfers = useCallback(async () => {
+    setTransfersLoading(true);
+    try {
+      const res = await apiFetch<{ data: Transfer[] }>('/api/v1/transfers');
+      if (res?.data) setTransfers(res.data);
+    } catch (err: any) { Alert.alert('Error', err.message); }
+    finally { setTransfersLoading(false); }
+  }, []);
+
+  const loadNotifications = useCallback(async () => {
+    setNotifLoading(true);
+    try {
+      const res = await apiFetch<{ data: Notification[] }>('/api/v1/notifications');
+      if (res?.data) {
+        setNotifications(res.data);
+        setUnreadCount(res.data.filter((n) => !n.read).length);
+      }
+    } catch (err: any) { Alert.alert('Error', err.message); }
+    finally { setNotifLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    if (activeSub === 'maintenance') loadMaintenance();
+    if (activeSub === 'transfers') loadTransfers();
+    if (activeSub === 'notifications') loadNotifications();
+  }, [activeSub]);
+
+  const handleCreateMaintenance = async () => {
+    if (!maintForm.assetId || !maintForm.issue) {
+      Alert.alert('Required', 'Asset ID and issue description are required.');
       return;
     }
-    const newReq: MaintenanceRequest = {
-      id: Math.random().toString(36).slice(2, 9),
-      assetTag: mTag,
-      assetName: mName,
-      requestedBy: 'Priya Shah (Lead)',
-      issue: mIssue.trim(),
-      priority: mPriority,
-      status: 'Pending Approval',
-      date: '2026-07-12',
-    };
-    setMaintenanceList([newReq, ...maintenanceList]);
-    setModalVisible(false);
-    setMIssue('');
-    Alert.alert('Request Submitted', `Work order logged for ${mName} (${mTag}).`);
+    setCreatingMaint(true);
+    try {
+      const payload: any = {
+        assetId: maintForm.assetId.trim(),
+        issue: maintForm.issue.trim(),
+        priority: maintForm.priority,
+      };
+      if (maintForm.estimatedCost) payload.cost = parseFloat(maintForm.estimatedCost);
+      await apiFetch('/api/v1/maintenance', { method: 'POST', body: JSON.stringify(payload) });
+      setMaintModal(false);
+      setMaintForm({ assetId: '', issue: '', priority: 'MEDIUM', estimatedCost: '' });
+      await loadMaintenance();
+      Alert.alert('Success', 'Maintenance request submitted!');
+    } catch (err: any) { Alert.alert('Error', err.message); }
+    finally { setCreatingMaint(false); }
   };
 
-  const handleCreateTransfer = () => {
-    Alert.prompt(
-      'Initiate Asset Transfer',
-      'Enter Asset Tag and New Custodian Name (e.g. AF-0078 - Arjun Nair):',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Submit Transfer',
-          onPress: (val?: string) => {
-            const parts = (val || 'AF-0078 - Arjun Nair').split('-');
-            const tag = parts[0]?.trim() || 'AF-0078';
-            const user = parts[1]?.trim() || 'Arjun Nair';
-            const newT: TransferRecord = {
-              id: Math.random().toString(36).slice(2, 9),
-              tag,
-              name: 'MacBook Pro 16" M3 Max',
-              fromDept: 'Engineering Pool',
-              toDept: 'Cloud Architecture',
-              custodian: user,
-              status: 'Pending Custodian Sign-off',
-              date: 'Jul 12, 2026',
-            };
-            setTransferList([newT, ...transferList]);
-            Alert.alert('Transfer Initiated', `Transfer order sent to ${user}.`);
-          },
-        },
-      ],
-      'plain-text',
-      'AF-0078 - Arjun Nair'
-    );
+  const handleCreateTransfer = async () => {
+    if (!transferForm.assetId || !transferForm.fromEmployeeId || !transferForm.toEmployeeId) {
+      Alert.alert('Required', 'Asset ID, From Employee ID, and To Employee ID are required.');
+      return;
+    }
+    setCreatingTransfer(true);
+    try {
+      await apiFetch('/api/v1/transfers', {
+        method: 'POST',
+        body: JSON.stringify({
+          assetId: transferForm.assetId.trim(),
+          fromEmployeeId: transferForm.fromEmployeeId.trim(),
+          toEmployeeId: transferForm.toEmployeeId.trim(),
+          reason: transferForm.reason.trim() || undefined,
+        }),
+      });
+      setTransferModal(false);
+      setTransferForm({ assetId: '', fromEmployeeId: '', toEmployeeId: '', reason: '' });
+      await loadTransfers();
+      Alert.alert('Success', 'Transfer request submitted!');
+    } catch (err: any) { Alert.alert('Error', err.message); }
+    finally { setCreatingTransfer(false); }
   };
+
+  const handleApproveTransfer = async (id: string) => {
+    try {
+      await apiFetch(`/api/v1/transfers/${id}/approve`, { method: 'POST' });
+      await loadTransfers();
+    } catch (err: any) { Alert.alert('Error', err.message); }
+  };
+
+  const handleRejectTransfer = async (id: string) => {
+    try {
+      await apiFetch(`/api/v1/transfers/${id}/reject`, { method: 'POST', body: JSON.stringify({ rejectionReason: 'Rejected via mobile' }) });
+      await loadTransfers();
+    } catch (err: any) { Alert.alert('Error', err.message); }
+  };
+
+  const markRead = async (id: string) => {
+    try {
+      await apiFetch(`/api/v1/notifications/${id}/read`, { method: 'PATCH' });
+      setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch { /* ignore */ }
+  };
+
+  const handleSignOut = () => {
+    Alert.alert('Sign Out', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: async () => { await signOut(); router.replace('/'); } },
+    ]);
+  };
+
+  const tabs: { id: SubSection; label: string; badge?: number }[] = [
+    { id: 'maintenance', label: '🛠️ Maintenance' },
+    { id: 'transfers', label: '🔄 Transfers' },
+    { id: 'notifications', label: '🔔 Alerts', badge: unreadCount },
+    { id: 'settings', label: '⚙️ Settings' },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.headerRow}>
+      {/* Header */}
+      <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Services & Hub</Text>
-          <Text style={styles.headerSub}>Maintenance, Transfers, & Custodian Pass</Text>
+          <Text style={styles.headerTitle}>Hub</Text>
+          <Text style={styles.headerSub}>{activeOrg?.name}</Text>
         </View>
-        <TouchableOpacity
-          onPress={() => router.push('/qr-scanner')}
-          style={styles.qrHeaderBtn}
-        >
-          <Text style={styles.qrHeaderText}>📷 QR</Text>
+        <TouchableOpacity onPress={() => router.push('/qr-scanner')} style={styles.qrBtn}>
+          <Text style={styles.qrBtnTxt}>📷 QR</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Sub-Section Switcher Pills */}
-      <View style={styles.subNavBox}>
-        {[
-          { id: 'maintenance', label: '🛠️ Maintenance' },
-          { id: 'transfers', label: '🔄 Transfers' },
-          { id: 'ecard', label: '🪪 e-Card Pass' },
-          { id: 'settings', label: '⚙️ Settings' },
-        ].map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            onPress={() => setActiveSub(item.id as TabSubSection)}
-            style={[styles.subNavPill, activeSub === item.id && styles.subNavPillActive]}
-          >
-            <Text style={[styles.subNavText, activeSub === item.id && styles.subNavTextActive]}>
-              {item.label}
-            </Text>
+      {/* Sub Nav Tabs */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subNavScroll} contentContainerStyle={styles.subNavContent}>
+        {tabs.map((t) => (
+          <TouchableOpacity key={t.id} onPress={() => setActiveSub(t.id)} style={[styles.subNavPill, activeSub === t.id && styles.subNavPillActive]}>
+            <Text style={[styles.subNavTxt, activeSub === t.id && styles.subNavTxtActive]}>{t.label}</Text>
+            {!!t.badge && t.badge > 0 && (
+              <View style={styles.badgeDot}><Text style={styles.badgeDotTxt}>{t.badge}</Text></View>
+            )}
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
-      <ScrollView
-        style={styles.listScroll}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* SUB-SECTION 1: MAINTENANCE & REPAIRS */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* MAINTENANCE */}
         {activeSub === 'maintenance' && (
-          <View style={styles.subContainer}>
-            <View style={styles.subHeadRow}>
-              <Text style={styles.subSectionTitle}>Active Work Orders ({maintenanceList.length})</Text>
-              <NeoButton
-                label="+ New Repair"
-                size="sm"
-                onPress={() => setModalVisible(true)}
-              />
+          <View>
+            <View style={styles.subHead}>
+              <Text style={styles.subTitle}>Work Orders ({maintenance.length})</Text>
+              <NeoButton label="+ New" size="sm" onPress={() => setMaintModal(true)} />
             </View>
-
-            {maintenanceList.map((item) => (
-              <NeoCard key={item.id} style={styles.mCard}>
-                <View style={styles.mHead}>
-                  <View>
-                    <Text style={styles.mTag}>{item.assetTag}</Text>
-                    <Text style={styles.mName}>{item.assetName}</Text>
+            {maintLoading ? <ActivityIndicator color={NeoColors.primary} /> : maintenance.length === 0 ? (
+              <View style={styles.emptyBox}><Text style={styles.emptyIcon}>🛠️</Text><Text style={styles.emptyTxt}>No maintenance requests</Text></View>
+            ) : maintenance.map((m) => (
+              <NeoCard key={m.id} style={styles.itemCard}>
+                <View style={styles.itemTop}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemTitle}>{m.asset?.name ?? 'Unknown Asset'}</Text>
+                    <Text style={styles.itemCode}>{m.asset?.assetCode}</Text>
                   </View>
-                  <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                    <NeoBadge label={item.status} variant={getStatusVariant(item.status)} />
-                    <NeoBadge label={`Priority: ${item.priority}`} variant={getPriorityVariant(item.priority)} />
+                  <View style={{ gap: 4 }}>
+                    <NeoBadge label={m.status} variant={STATUS_BADGE[m.status] || 'secondary'} />
+                    <NeoBadge label={m.priority} variant={PRIORITY_BADGE[m.priority] || 'secondary'} />
                   </View>
                 </View>
-
-                <View style={styles.issueBox}>
-                  <Text style={styles.issueLabel}>REPORTED ISSUE:</Text>
-                  <Text style={styles.issueText}>{item.issue}</Text>
-                </View>
-
-                <View style={styles.mFoot}>
-                  <Text style={styles.mDate}>📅 Requested: {item.date}</Text>
-                  <Text style={styles.mCost}>{item.cost ? `Est. Cost: $${item.cost}` : 'Under Assessment'}</Text>
+                <Text style={styles.issueText}>{m.issue}</Text>
+                <View style={styles.itemFoot}>
+                  <Text style={styles.footTxt}>📅 {formatDate(m.openedAt)}</Text>
+                  {m.cost && <Text style={styles.footTxt}>💰 ${m.cost}</Text>}
+                  {m.assignedTo && <Text style={styles.footTxt}>👤 {m.assignedTo.name}</Text>}
                 </View>
               </NeoCard>
             ))}
           </View>
         )}
 
-        {/* SUB-SECTION 2: TRANSFERS & AUDIT LOG */}
+        {/* TRANSFERS */}
         {activeSub === 'transfers' && (
-          <View style={styles.subContainer}>
-            <View style={styles.subHeadRow}>
-              <Text style={styles.subSectionTitle}>Custody Transfer Orders ({transferList.length})</Text>
-              <NeoButton
-                label="+ New Transfer"
-                size="sm"
-                onPress={handleCreateTransfer}
-              />
+          <View>
+            <View style={styles.subHead}>
+              <Text style={styles.subTitle}>Transfer Orders ({transfers.length})</Text>
+              <NeoButton label="+ Request" size="sm" onPress={() => setTransferModal(true)} />
             </View>
-
-            {transferList.map((t) => (
-              <NeoCard key={t.id} style={styles.tCard}>
-                <View style={styles.tHead}>
-                  <View>
-                    <Text style={styles.tTag}>{t.tag}</Text>
-                    <Text style={styles.tName}>{t.name}</Text>
+            {transfersLoading ? <ActivityIndicator color={NeoColors.primary} /> : transfers.length === 0 ? (
+              <View style={styles.emptyBox}><Text style={styles.emptyIcon}>🔄</Text><Text style={styles.emptyTxt}>No transfer requests</Text></View>
+            ) : transfers.map((t) => (
+              <NeoCard key={t.id} style={styles.itemCard}>
+                <View style={styles.itemTop}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemTitle}>{t.asset?.name ?? 'Unknown Asset'}</Text>
+                    <Text style={styles.itemCode}>{t.asset?.assetCode}</Text>
                   </View>
-                  <NeoBadge
-                    label={t.status}
-                    variant={t.status === 'Completed' ? 'success' : 'warning'}
-                  />
+                  <NeoBadge label={t.status} variant={STATUS_BADGE[t.status] || 'secondary'} />
                 </View>
 
-                <View style={styles.flowBox}>
-                  <View style={styles.deptCol}>
-                    <Text style={styles.deptTitle}>FROM</Text>
-                    <Text style={styles.deptValue}>{t.fromDept}</Text>
-                  </View>
-                  <Text style={styles.flowArrow}>➔</Text>
-                  <View style={styles.deptCol}>
-                    <Text style={styles.deptTitle}>TO</Text>
-                    <Text style={styles.deptValue}>{t.toDept}</Text>
-                  </View>
+                <View style={styles.transferFlow}>
+                  <Text style={styles.transferPerson}>{t.fromEmployee?.user?.name ?? t.fromEmployee?.employeeCode ?? '—'}</Text>
+                  <Text style={styles.transferArrow}>→</Text>
+                  <Text style={styles.transferPerson}>{t.toEmployee?.user?.name ?? t.toEmployee?.employeeCode ?? '—'}</Text>
                 </View>
 
-                <View style={styles.tFoot}>
-                  <Text style={styles.custodianText}>👤 Assignee: {t.custodian}</Text>
-                  <Text style={styles.tDate}>🗓 {t.date}</Text>
-                </View>
+                {t.reason && <Text style={styles.issueText}>{t.reason}</Text>}
+                <Text style={styles.footTxt}>📅 {formatDate(t.createdAt)}</Text>
+
+                {t.status === 'PENDING' && ['ADMIN', 'ASSET_MANAGER', 'DEPARTMENT_HEAD'].includes(activeOrg?.role || '') && (
+                  <View style={styles.approvalRow}>
+                    <TouchableOpacity onPress={() => handleApproveTransfer(t.id)} style={styles.approveBtn}>
+                      <Text style={styles.approveTxt}>✅ Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleRejectTransfer(t.id)} style={styles.rejectBtn}>
+                      <Text style={styles.rejectTxt}>❌ Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </NeoCard>
             ))}
           </View>
         )}
 
-        {/* SUB-SECTION 3: DIGITAL e-CARD PASS */}
-        {activeSub === 'ecard' && (
-          <View style={styles.subContainer}>
-            <Text style={styles.subSectionTitle}>🪪 Official Digital ID & Custodian Pass</Text>
-            <Text style={styles.eCardSubtext}>
-              Present this verified digital ID to security at checkpoints, warehouses, or hardware depots.
-            </Text>
-
-            <View style={styles.neonCard}>
-              <View style={styles.neonCardHead}>
-                <Text style={styles.neonOrg}>ASSETFLOW ENTERPRISE</Text>
-                <Text style={styles.neonTag}>VERIFIED CUSTODIAN</Text>
-              </View>
-
-              <View style={styles.neonAvatarRow}>
-                <View style={styles.neonAvatar}>
-                  <Text style={styles.neonAvatarText}>PS</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.neonUserName}>Priya Shah</Text>
-                  <Text style={styles.neonUserRole}>Senior Engineering Lead</Text>
-                  <Text style={styles.neonUserEmail}>p.shah@assetflow-enterprise.io</Text>
-                </View>
-              </View>
-
-              <View style={styles.neonGrid}>
-                <View style={styles.neonGridItem}>
-                  <Text style={styles.neonGridLabel}>EMPLOYEE ID</Text>
-                  <Text style={styles.neonGridVal}>EMP-88210-PS</Text>
-                </View>
-                <View style={styles.neonGridItem}>
-                  <Text style={styles.neonGridLabel}>DEPARTMENT</Text>
-                  <Text style={styles.neonGridVal}>Engineering & Cloud</Text>
-                </View>
-                <View style={styles.neonGridItem}>
-                  <Text style={styles.neonGridLabel}>CLEARANCE LEVEL</Text>
-                  <Text style={styles.neonGridValOrange}>Tier 4 (Hardware & Servers)</Text>
-                </View>
-                <View style={styles.neonGridItem}>
-                  <Text style={styles.neonGridLabel}>ASSIGNED VALUE</Text>
-                  <Text style={styles.neonGridVal}>$18,450.00 USD</Text>
-                </View>
-              </View>
-
-              <View style={styles.neonBarcodeBox}>
-                <Text style={styles.neonBarcodeText}>|||| | ||||| || ||| ||||| | |||| ||| ||</Text>
-                <Text style={styles.neonBarcodeSerial}>HI1418872904-BB • VALID THRU 2028</Text>
-              </View>
-            </View>
+        {/* NOTIFICATIONS */}
+        {activeSub === 'notifications' && (
+          <View>
+            <Text style={styles.subTitle}>Notifications ({notifications.length})</Text>
+            {notifLoading ? <ActivityIndicator color={NeoColors.primary} /> : notifications.length === 0 ? (
+              <View style={styles.emptyBox}><Text style={styles.emptyIcon}>🔔</Text><Text style={styles.emptyTxt}>No notifications</Text></View>
+            ) : notifications.map((n) => (
+              <TouchableOpacity key={n.id} onPress={() => !n.read && markRead(n.id)} activeOpacity={0.85}>
+                <NeoCard style={n.read ? styles.notifCard : [styles.notifCard, styles.notifUnread]}>
+                  <View style={styles.notifTop}>
+                    <Text style={styles.notifTitle}>{n.title}</Text>
+                    {!n.read && <View style={styles.unreadDot} />}
+                  </View>
+                  <Text style={styles.notifBody}>{n.body}</Text>
+                  <Text style={styles.notifDate}>{formatDate(n.createdAt)}</Text>
+                </NeoCard>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
-        {/* SUB-SECTION 4: SETTINGS */}
+        {/* SETTINGS */}
         {activeSub === 'settings' && (
-          <View style={styles.subContainer}>
-            <Text style={styles.subSectionTitle}>App & Enterprise Settings</Text>
+          <View>
+            <Text style={styles.subTitle}>Settings</Text>
 
-            <NeoCard style={styles.settingCard}>
-              <Text style={styles.settingTitle}>Organization Details</Text>
-              <Text style={styles.settingText}>Current Workspace: AssetFlow HQ (Bengaluru / Mumbai)</Text>
-              <Text style={styles.settingText}>Connected Database: PostgreSQL + Neon DB Pool</Text>
-              <Text style={styles.settingText}>Enterprise Plan: Unlimited Assets Tier</Text>
+            {/* User Card */}
+            <NeoCard style={styles.userCard}>
+              <View style={styles.userAvatar}>
+                <Text style={styles.userAvatarTxt}>{user?.name?.slice(0, 2).toUpperCase() ?? 'AF'}</Text>
+              </View>
+              <Text style={styles.userName}>{user?.name}</Text>
+              <Text style={styles.userEmail}>{user?.email}</Text>
+              {activeOrg && <NeoBadge label={`${activeOrg.role.replace(/_/g, ' ')} @ ${activeOrg.name}`} variant="info" />}
             </NeoCard>
 
             <NeoCard style={styles.settingCard}>
-              <Text style={styles.settingTitle}>Appearance & Theme</Text>
-              <Text style={styles.settingText}>Theme Mode: Dark Obsidian (Recommended)</Text>
-              <Text style={styles.settingText}>Primary Color Token: #FF6600 (Neo-morphic Orange)</Text>
-              <Text style={styles.settingText}>NativeWind: Enabled (Tailwind + CSS Interop)</Text>
+              <Text style={styles.settingTitle}>Organization</Text>
+              <Text style={styles.settingText}>Name: {activeOrg?.name ?? '—'}</Text>
+              <Text style={styles.settingText}>Slug: @{activeOrg?.slug ?? '—'}</Text>
+              <Text style={styles.settingText}>Role: {activeOrg?.role ?? '—'}</Text>
             </NeoCard>
+
+            <NeoCard style={styles.settingCard}>
+              <Text style={styles.settingTitle}>Platform</Text>
+              <Text style={styles.settingText}>Theme: Dark Obsidian</Text>
+              <Text style={styles.settingText}>Primary: #FF6600</Text>
+              <Text style={styles.settingText}>API: {process.env.EXPO_PUBLIC_API_URL}</Text>
+            </NeoCard>
+
+            {activeOrg?.role === 'ADMIN' && (
+              <NeoButton
+                label="Organization Setup (Admin)"
+                variant="primary"
+                onPress={() => router.push('/admin')}
+                style={{ marginTop: 10 }}
+              />
+            )}
+
+            {['ADMIN', 'ASSET_MANAGER', 'DEPARTMENT_HEAD'].includes(activeOrg?.role || '') && (
+              <NeoButton
+                label="Reports & Analytics"
+                variant="outline"
+                onPress={() => router.push('/reports')}
+                style={{ marginTop: 10 }}
+              />
+            )}
 
             <NeoButton
-              label="Sync & Refresh Cache"
+              label="Switch Organization"
               variant="outline"
-              onPress={() => Alert.alert('Sync Complete', 'All assets, bookings, and audit logs are synced with cloud DB.')}
+              onPress={() => router.push('/organizations')}
               style={{ marginTop: 10 }}
             />
 
             <NeoButton
-              label="Sign Out"
+              label="🚪 Sign Out"
               variant="secondary"
-              onPress={() => {
-                Alert.alert('Signed Out', 'You have been securely signed out of your workspace.', [
-                  { text: 'OK', onPress: () => router.replace('/auth/login') }
-                ]);
-              }}
-              style={{ marginTop: 10, borderColor: NeoColors.danger }}
+              onPress={handleSignOut}
+              style={{ marginTop: 10 }}
             />
           </View>
         )}
       </ScrollView>
 
-      {/* Maintenance Repair Modal */}
-      <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHead}>
-              <Text style={styles.modalTitle}>Log Maintenance Order</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+      {/* Create Maintenance Modal */}
+      <Modal visible={maintModal} transparent animationType="slide" onRequestClose={() => setMaintModal(false)}>
+        <View style={styles.bottomOverlay}>
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHead}>
+              <Text style={styles.sheetTitle}>Log Maintenance Request</Text>
+              <TouchableOpacity onPress={() => setMaintModal(false)}>
+                <Text style={styles.closeBtn}>✕</Text>
               </TouchableOpacity>
             </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.fieldLabel}>ASSET ID *</Text>
+              <TextInput style={styles.fieldInput} placeholder="Enter asset UUID" placeholderTextColor="#687082" value={maintForm.assetId} onChangeText={(v) => setMaintForm((f) => ({ ...f, assetId: v }))} autoCapitalize="none" />
 
-            <ScrollView style={styles.modalForm} showsVerticalScrollIndicator={false}>
-              <Text style={styles.fieldLabel}>ASSET TAG OR NAME *</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={mTag}
-                onChangeText={setMTag}
-              />
+              <Text style={styles.fieldLabel}>ISSUE DESCRIPTION *</Text>
+              <TextInput style={[styles.fieldInput, { height: 80, textAlignVertical: 'top' }]} placeholder="Describe the issue..." placeholderTextColor="#687082" value={maintForm.issue} onChangeText={(v) => setMaintForm((f) => ({ ...f, issue: v }))} multiline />
 
-              <Text style={styles.fieldLabel}>ASSET MODEL / NAME</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={mName}
-                onChangeText={setMName}
-              />
-
-              <Text style={styles.fieldLabel}>PRIORITY LEVEL</Text>
+              <Text style={styles.fieldLabel}>PRIORITY</Text>
               <View style={styles.priorityRow}>
-                {(['Low', 'Medium', 'High', 'Critical'] as Priority[]).map((p) => (
-                  <TouchableOpacity
-                    key={p}
-                    onPress={() => setMPriority(p)}
-                    style={[styles.priorityPill, mPriority === p && styles.priorityPillActive]}
-                  >
-                    <Text style={[styles.priorityText, mPriority === p && { color: '#FFFFFF' }]}>
-                      {p}
-                    </Text>
+                {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => (
+                  <TouchableOpacity key={p} onPress={() => setMaintForm((f) => ({ ...f, priority: p }))} style={[styles.priorityPill, maintForm.priority === p && styles.priorityPillActive]}>
+                    <Text style={[styles.priorityTxt, maintForm.priority === p && styles.priorityTxtActive]}>{p}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.fieldLabel}>ISSUE DESCRIPTION / SYMPTOMS *</Text>
-              <TextInput
-                style={[styles.fieldInput, { height: 86, textAlignVertical: 'top' }]}
-                placeholder="e.g. Battery not charging, display flickering, lamp dim..."
-                placeholderTextColor="#687082"
-                multiline
-                value={mIssue}
-                onChangeText={setMIssue}
-              />
+              <Text style={styles.fieldLabel}>ESTIMATED COST ($)</Text>
+              <TextInput style={styles.fieldInput} placeholder="450.00" placeholderTextColor="#687082" value={maintForm.estimatedCost} onChangeText={(v) => setMaintForm((f) => ({ ...f, estimatedCost: v }))} keyboardType="decimal-pad" />
 
-              <View style={styles.modalActions}>
-                <NeoButton
-                  label="Cancel"
-                  variant="ghost"
-                  onPress={() => setModalVisible(false)}
-                  style={{ flex: 1 }}
-                />
-                <NeoButton
-                  label="Submit Work Order"
-                  variant="primary"
-                  onPress={handleCreateRepair}
-                  style={{ flex: 1.5 }}
-                />
-              </View>
+              <NeoButton label={creatingMaint ? 'Submitting...' : 'Submit Request'} variant="primary" onPress={handleCreateMaintenance} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Create Transfer Modal */}
+      <Modal visible={transferModal} transparent animationType="slide" onRequestClose={() => setTransferModal(false)}>
+        <View style={styles.bottomOverlay}>
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHead}>
+              <Text style={styles.sheetTitle}>Request Transfer</Text>
+              <TouchableOpacity onPress={() => setTransferModal(false)}>
+                <Text style={styles.closeBtn}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.fieldLabel}>ASSET ID *</Text>
+              <TextInput style={styles.fieldInput} placeholder="Enter asset UUID" placeholderTextColor="#687082" value={transferForm.assetId} onChangeText={(v) => setTransferForm((f) => ({ ...f, assetId: v }))} autoCapitalize="none" />
+
+              <Text style={styles.fieldLabel}>FROM EMPLOYEE ID *</Text>
+              <TextInput style={styles.fieldInput} placeholder="Current custodian employee UUID" placeholderTextColor="#687082" value={transferForm.fromEmployeeId} onChangeText={(v) => setTransferForm((f) => ({ ...f, fromEmployeeId: v }))} autoCapitalize="none" />
+
+              <Text style={styles.fieldLabel}>TO EMPLOYEE ID *</Text>
+              <TextInput style={styles.fieldInput} placeholder="New custodian employee UUID" placeholderTextColor="#687082" value={transferForm.toEmployeeId} onChangeText={(v) => setTransferForm((f) => ({ ...f, toEmployeeId: v }))} autoCapitalize="none" />
+
+              <Text style={styles.fieldLabel}>REASON</Text>
+              <TextInput style={[styles.fieldInput, { height: 70, textAlignVertical: 'top' }]} placeholder="Reason for transfer..." placeholderTextColor="#687082" value={transferForm.reason} onChangeText={(v) => setTransferForm((f) => ({ ...f, reason: v }))} multiline />
+
+              <NeoButton label={creatingTransfer ? 'Submitting...' : 'Submit Transfer'} variant="primary" onPress={handleCreateTransfer} />
             </ScrollView>
           </View>
         </View>
@@ -433,442 +460,66 @@ export default function MoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: NeoColors.background,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    marginBottom: 14,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  headerSub: {
-    fontSize: 12,
-    color: '#A0A6B2',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  qrHeaderBtn: {
-    backgroundColor: 'rgba(255, 102, 0, 0.18)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: NeoColors.primary,
-  },
-  qrHeaderText: {
-    color: NeoColors.primary,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  subNavBox: {
-    flexDirection: 'row',
-    marginHorizontal: Spacing.four,
-    backgroundColor: '#161923',
-    padding: 6,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#252A3E',
-    marginBottom: 16,
-  },
-  subNavPill: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  subNavPillActive: {
-    backgroundColor: NeoColors.primary,
-  },
-  subNavText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#A0A6B2',
-  },
-  subNavTextActive: {
-    color: '#FFFFFF',
-  },
-  listScroll: {
-    flex: 1,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.four,
-    paddingBottom: BottomTabInset + Spacing.five,
-    gap: 16,
-  },
-  subContainer: {
-    gap: 16,
-  },
-  subHeadRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  subSectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  mCard: {
-    padding: 16,
-  },
-  mHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  mTag: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: NeoColors.primary,
-  },
-  mName: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginTop: 2,
-  },
-  issueBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 14,
-  },
-  issueLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#8E96A4',
-    marginBottom: 4,
-  },
-  issueText: {
-    fontSize: 13,
-    color: '#E5E7EB',
-    fontWeight: '600',
-  },
-  mFoot: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-    paddingTop: 10,
-  },
-  mDate: {
-    fontSize: 12,
-    color: '#A0A6B2',
-    fontWeight: '600',
-  },
-  mCost: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: NeoColors.primary,
-  },
-  tCard: {
-    padding: 16,
-  },
-  tHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  tTag: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: NeoColors.primary,
-  },
-  tName: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginTop: 2,
-  },
-  flowBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginBottom: 14,
-  },
-  deptCol: {
-    alignItems: 'center',
-  },
-  deptTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#8E96A4',
-    marginBottom: 2,
-  },
-  deptValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  flowArrow: {
-    fontSize: 20,
-    color: NeoColors.primary,
-    fontWeight: '800',
-  },
-  tFoot: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-    paddingTop: 10,
-  },
-  custodianText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#E5E7EB',
-  },
-  tDate: {
-    fontSize: 12,
-    color: '#8E96A4',
-  },
-  eCardSubtext: {
-    fontSize: 13,
-    color: '#A0A6B2',
-    marginBottom: 12,
-  },
-  neonCard: {
-    backgroundColor: '#FF6600',
-    borderRadius: 30,
-    padding: 24,
-    borderWidth: 2,
-    borderColor: '#FF8533',
-    ...Platform.select({
-      ios: {
-        shadowColor: NeoColors.primary,
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.5,
-        shadowRadius: 30,
-      },
-      android: {
-        elevation: 16,
-      },
-      web: {
-        boxShadow: '0 20px 60px rgba(255, 102, 0, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.3)',
-      } as any,
-    }),
-  },
-  neonCardHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  neonOrg: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 1.5,
-  },
-  neonTag: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  neonAvatarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    padding: 16,
-    borderRadius: 22,
-  },
-  neonAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  neonAvatarText: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: NeoColors.primary,
-  },
-  neonUserName: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  neonUserRole: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFEACC',
-    marginTop: 2,
-  },
-  neonUserEmail: {
-    fontSize: 11,
-    color: '#FFFFFF',
-    opacity: 0.8,
-    marginTop: 2,
-  },
-  neonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    marginBottom: 24,
-  },
-  neonGridItem: {
-    width: '46%',
-  },
-  neonGridLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    opacity: 0.8,
-  },
-  neonGridVal: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    marginTop: 2,
-  },
-  neonGridValOrange: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#FFEACC',
-    marginTop: 2,
-  },
-  neonBarcodeBox: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 18,
-  },
-  neonBarcodeText: {
-    fontFamily: 'monospace',
-    fontSize: 18,
-    letterSpacing: 2,
-    color: '#000000',
-    fontWeight: '900',
-  },
-  neonBarcodeSerial: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#1E2233',
-    marginTop: 4,
-  },
-  settingCard: {
-    padding: 16,
-    gap: 6,
-  },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  settingText: {
-    fontSize: 13,
-    color: '#A0A6B2',
-    fontWeight: '500',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.78)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    width: '100%',
-    maxHeight: '88%',
-    backgroundColor: '#161923',
-    borderRadius: 28,
-    padding: 24,
-    borderWidth: 1.5,
-    borderColor: NeoColors.primary,
-  },
-  modalHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#252A3E',
-    paddingBottom: 14,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  modalClose: {
-    fontSize: 22,
-    color: '#A0A6B2',
-    padding: 4,
-  },
-  modalForm: {
-    gap: 12,
-  },
-  fieldLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#A0A6B2',
-    letterSpacing: 0.8,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  fieldInput: {
-    backgroundColor: '#1E2233',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    color: '#FFFFFF',
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#2D334A',
-  },
-  priorityRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 4,
-  },
-  priorityPill: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: '#1E2233',
-    borderWidth: 1,
-    borderColor: '#2D334A',
-    alignItems: 'center',
-  },
-  priorityPillActive: {
-    backgroundColor: NeoColors.primary,
-    borderColor: '#FF8533',
-  },
-  priorityText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#A0A6B2',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
-    marginBottom: 10,
-  },
+  safeArea: { flex: 1, backgroundColor: NeoColors.background },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.four, paddingTop: 16, paddingBottom: 10 },
+  headerTitle: { fontSize: 22, fontWeight: '900', color: '#FFFFFF' },
+  headerSub: { fontSize: 12, color: '#A0A6B2', fontWeight: '500' },
+  qrBtn: { backgroundColor: 'rgba(255,102,0,0.12)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,102,0,0.3)' },
+  qrBtnTxt: { color: NeoColors.primary, fontSize: 12, fontWeight: '800' },
+  subNavScroll: { flexGrow: 0 },
+  subNavContent: { paddingHorizontal: Spacing.four, gap: 8, marginBottom: 8 },
+  subNavPill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#161923', borderWidth: 1, borderColor: '#2D334A', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  subNavPillActive: { backgroundColor: 'rgba(255,102,0,0.15)', borderColor: NeoColors.primary },
+  subNavTxt: { fontSize: 12, color: '#A0A6B2', fontWeight: '700' },
+  subNavTxtActive: { color: NeoColors.primary },
+  badgeDot: { backgroundColor: NeoColors.danger, width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  badgeDotTxt: { fontSize: 10, fontWeight: '800', color: '#FFF' },
+  scrollContent: { paddingHorizontal: Spacing.four, paddingBottom: 120 },
+  subHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  subTitle: { fontSize: 13, fontWeight: '800', color: '#8E96A4', letterSpacing: 0.6, marginBottom: 10 },
+  itemCard: { marginBottom: 10, padding: 14 },
+  itemTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
+  itemTitle: { fontSize: 15, fontWeight: '800', color: '#FFFFFF', marginBottom: 2 },
+  itemCode: { fontSize: 11, color: '#A0A6B2' },
+  issueText: { fontSize: 13, color: '#A0A6B2', marginBottom: 8, lineHeight: 18 },
+  itemFoot: { flexDirection: 'row', gap: 12 },
+  footTxt: { fontSize: 11, color: '#687082', fontWeight: '600' },
+  transferFlow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: 10, marginBottom: 8, gap: 8 },
+  transferPerson: { flex: 1, fontSize: 13, fontWeight: '700', color: '#FFFFFF', textAlign: 'center' },
+  transferArrow: { fontSize: 16, color: NeoColors.primary, fontWeight: '800' },
+  approvalRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  approveBtn: { flex: 1, backgroundColor: 'rgba(16,185,129,0.12)', paddingVertical: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: '#10B981' },
+  approveTxt: { fontSize: 12, color: '#10B981', fontWeight: '800' },
+  rejectBtn: { flex: 1, backgroundColor: 'rgba(239,68,68,0.12)', paddingVertical: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: '#EF4444' },
+  rejectTxt: { fontSize: 12, color: '#EF4444', fontWeight: '800' },
+  notifCard: { marginBottom: 8, padding: 14 },
+  notifUnread: { borderColor: 'rgba(255,102,0,0.3)', borderWidth: 1 },
+  notifTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  notifTitle: { fontSize: 14, fontWeight: '800', color: '#FFFFFF', flex: 1 },
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: NeoColors.primary },
+  notifBody: { fontSize: 13, color: '#A0A6B2', lineHeight: 18, marginBottom: 6 },
+  notifDate: { fontSize: 11, color: '#687082' },
+  emptyBox: { alignItems: 'center', paddingVertical: 40, gap: 10 },
+  emptyIcon: { fontSize: 40 },
+  emptyTxt: { fontSize: 14, fontWeight: '800', color: '#A0A6B2' },
+  userCard: { padding: 20, alignItems: 'center', marginBottom: 12 },
+  userAvatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,102,0,0.15)', borderWidth: 2, borderColor: 'rgba(255,102,0,0.4)', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  userAvatarTxt: { fontSize: 24, fontWeight: '800', color: NeoColors.primary },
+  userName: { fontSize: 18, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 },
+  userEmail: { fontSize: 13, color: '#A0A6B2', marginBottom: 10 },
+  settingCard: { padding: 16, marginBottom: 10 },
+  settingTitle: { fontSize: 13, fontWeight: '800', color: '#FFFFFF', marginBottom: 10 },
+  settingText: { fontSize: 12, color: '#A0A6B2', marginBottom: 4 },
+  bottomOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  bottomSheet: { backgroundColor: '#161923', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, maxHeight: '88%' },
+  sheetHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
+  closeBtn: { fontSize: 20, color: '#A0A6B2', fontWeight: '800' },
+  fieldLabel: { fontSize: 11, fontWeight: '800', color: '#8E96A4', letterSpacing: 0.8, marginBottom: 6 },
+  fieldInput: { backgroundColor: '#1E2233', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: '#FFFFFF', fontSize: 14, borderWidth: 1, borderColor: '#2D334A', marginBottom: 14 },
+  priorityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  priorityPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: '#1E2233', borderWidth: 1, borderColor: '#2D334A' },
+  priorityPillActive: { backgroundColor: 'rgba(255,102,0,0.15)', borderColor: NeoColors.primary },
+  priorityTxt: { fontSize: 11, color: '#A0A6B2', fontWeight: '700' },
+  priorityTxtActive: { color: NeoColors.primary },
 });

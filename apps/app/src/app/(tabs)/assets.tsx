@@ -1,13 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Modal,
-  Alert,
+  StyleSheet, Text, View, ScrollView, TouchableOpacity,
+  TextInput, ActivityIndicator, RefreshControl, Alert, Modal, FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,364 +9,421 @@ import { useRouter } from 'expo-router';
 import { NeoCard } from '@/components/neo/NeoCard';
 import { NeoBadge, BadgeVariant } from '@/components/neo/NeoBadge';
 import { NeoButton } from '@/components/neo/NeoButton';
-import { NeoColors, Spacing, BottomTabInset } from '@/constants/theme';
-
-type AssetStatus = 'Available' | 'Allocated' | 'Maintenance' | 'Retired';
+import { NeoColors, Spacing } from '@/constants/theme';
+import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface Asset {
   id: string;
-  tag: string;
+  assetCode: string;
   name: string;
-  category: string;
-  status: AssetStatus;
-  location: string;
-  department: string;
-  serialNo: string;
-  assignedTo: string;
+  serialNumber?: string;
+  status: string;
+  condition: string;
+  isShared: boolean;
+  purchaseCost?: number;
+  currentValue?: number;
+  purchaseDate?: string;
+  warrantyExpiry?: string;
+  description?: string;
+  category?: { id: string; name: string };
+  department?: { id: string; name: string };
+  location?: { id: string; name: string };
 }
 
-const INITIAL_ASSETS: Asset[] = [
-  { id: 'a1', tag: 'AF-0012', name: 'Dell Laptop XPS 15', category: 'Electronics', status: 'Allocated', location: 'Bengaluru', department: 'Engineering', serialNo: 'DL-2024-0012', assignedTo: 'Priya Shah' },
-  { id: 'a2', tag: 'AF-0062', name: '4K Laser Projector', category: 'Electronics', status: 'Maintenance', location: 'HQ Floor 2', department: 'Facilities', serialNo: 'PJ-2024-0062', assignedTo: '' },
-  { id: 'a3', tag: 'AF-0201', name: 'Ergonomic Office Chair', category: 'Furniture', status: 'Available', location: 'Warehouse Wing A', department: 'Facilities', serialNo: 'OC-2024-0201', assignedTo: '' },
-  { id: 'a4', tag: 'AF-0078', name: 'MacBook Pro 16" M3 Max', category: 'Electronics', status: 'Allocated', location: 'Mumbai HQ Floor 4', department: 'Engineering', serialNo: 'MB-2024-0078', assignedTo: 'Rohan Mehta' },
-  { id: 'a5', tag: 'AF-0115', name: 'Motorized Standing Desk', category: 'Furniture', status: 'Available', location: 'Warehouse Wing B', department: '', serialNo: 'SD-2024-0115', assignedTo: '' },
-  { id: 'a6', tag: 'AF-0310', name: 'Toyota Innova Hybrid', category: 'Vehicles', status: 'Allocated', location: 'Bengaluru Parking', department: 'Field Ops', serialNo: 'TI-2023-0310', assignedTo: 'Sana Iqbal' },
-  { id: 'a7', tag: 'AF-0042', name: 'Conference Smart Display 85"', category: 'Electronics', status: 'Retired', location: 'HQ Floor 3 Storage', department: 'Facilities', serialNo: 'CD-2023-0042', assignedTo: '' },
-];
+interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 
-const CATEGORIES = ['All', 'Electronics', 'Furniture', 'Vehicles'];
-const STATUSES: ('All' | AssetStatus)[] = ['All', 'Available', 'Allocated', 'Maintenance', 'Retired'];
+const STATUS_BADGE: Record<string, BadgeVariant> = {
+  AVAILABLE: 'success',
+  ALLOCATED: 'info',
+  UNDER_MAINTENANCE: 'warning',
+  RESERVED: 'info',
+  LOST: 'danger',
+  DAMAGED: 'danger',
+  RETIRED: 'neutral',
+  DISPOSED: 'neutral',
+  IN_AUDIT: 'warning',
+};
+
+const STATUSES = ['', 'AVAILABLE', 'ALLOCATED', 'UNDER_MAINTENANCE', 'RESERVED', 'LOST', 'DAMAGED', 'RETIRED'];
+
+function formatCurrency(v?: number) {
+  if (!v) return '—';
+  if (v >= 1000) return `$${(v / 1000).toFixed(1)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
+function formatDate(iso?: string) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 export default function AssetsScreen() {
   const router = useRouter();
-  const [assets, setAssets] = useState<Asset[]>(INITIAL_ASSETS);
+  const { activeOrg, user } = useAuth();
+
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Filters
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState<'All' | AssetStatus>('All');
-  const [modalVisible, setModalVisible] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
 
-  // Form state for adding asset
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState('Electronics');
-  const [location, setLocation] = useState('Mumbai HQ');
-  const [department, setDepartment] = useState('Engineering');
-  const [serialNo, setSerialNo] = useState('');
+  // Detail modal
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  const filteredAssets = assets.filter((a) => {
-    const matchCat = categoryFilter === 'All' || a.category === categoryFilter;
-    const matchStatus = statusFilter === 'All' || a.status === statusFilter;
-    const q = search.toLowerCase();
-    const matchQuery =
-      a.name.toLowerCase().includes(q) ||
-      a.tag.toLowerCase().includes(q) ||
-      a.serialNo.toLowerCase().includes(q) ||
-      a.assignedTo.toLowerCase().includes(q) ||
-      a.department.toLowerCase().includes(q);
-    return matchCat && matchStatus && matchQuery;
-  });
+  // Registration Modal
+  const [registerModal, setRegisterModal] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [regForm, setRegForm] = useState({ name: '', categoryId: '', condition: 'NEW', isShared: false, description: '' });
+  const [categories, setCategories] = useState<any[]>([]);
 
-  const getStatusVariant = (status: AssetStatus): BadgeVariant => {
-    switch (status) {
-      case 'Available': return 'success';
-      case 'Allocated': return 'info';
-      case 'Maintenance': return 'warning';
-      case 'Retired': return 'neutral';
+  // Allocation Modal
+  const [allocateModal, setAllocateModal] = useState(false);
+  const [allocating, setAllocating] = useState(false);
+  const [allocForm, setAllocForm] = useState({ employeeId: '', expectedReturn: '' });
+
+  const buildQuery = useCallback((p: number, s: string, status: string) => {
+    const params = new URLSearchParams();
+    params.set('page', String(p));
+    params.set('limit', '20');
+    if (s) params.set('search', s);
+    if (status) params.set('status', status);
+    return `/api/v1/assets?${params.toString()}`;
+  }, []);
+
+  const fetchAssets = useCallback(async (p = 1, replace = true) => {
+    try {
+      const res = await apiFetch<{ data: Asset[]; meta: PaginationMeta }>(buildQuery(p, search, statusFilter));
+      if (res?.data) {
+        setAssets(replace ? res.data : (prev) => [...prev, ...res.data]);
+        setMeta(res.meta || null);
+        setPage(p);
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to load assets');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      setLoadingMore(false);
+    }
+  }, [search, statusFilter, buildQuery]);
+
+  const loadCategories = async () => {
+    try {
+      const res = await apiFetch<{ data: any[] }>('/api/v1/categories');
+      setCategories(res.data || []);
+    } catch { }
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    fetchAssets(1, true);
+    loadCategories();
+  }, [fetchAssets]);
+
+  const onRefresh = () => { setRefreshing(true); fetchAssets(1, true); };
+  const loadMore = () => {
+    if (meta && page < meta.totalPages && !loadingMore) {
+      setLoadingMore(true);
+      fetchAssets(page + 1, false);
     }
   };
 
-  const handleCheckInOut = (asset: Asset) => {
-    if (asset.status === 'Available') {
-      Alert.prompt(
-        'Check-Out Asset',
-        `Enter name of employee taking custody of ${asset.name} (${asset.tag}):`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Check Out',
-            onPress: (user?: string) => {
-              const assignee = user || 'Arjun Nair';
-              setAssets((prev) =>
-                prev.map((item) =>
-                  item.id === asset.id
-                    ? { ...item, status: 'Allocated', assignedTo: assignee, department: 'Engineering' }
-                    : item
-                )
-              );
-              Alert.alert('Checked Out', `${asset.name} is now allocated to ${assignee}.`);
-            },
-          },
-        ],
-        'plain-text',
-        'Arjun Nair'
-      );
-    } else if (asset.status === 'Allocated') {
-      Alert.alert(
-        'Check-In Asset',
-        `Return ${asset.name} (${asset.tag}) currently assigned to ${asset.assignedTo} back to inventory?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Yes, Return to Inventory',
-            onPress: () => {
-              setAssets((prev) =>
-                prev.map((item) =>
-                  item.id === asset.id
-                    ? { ...item, status: 'Available', assignedTo: '', location: 'Warehouse Wing A' }
-                    : item
-                )
-              );
-              Alert.alert('Checked In', `${asset.name} is now available in inventory.`);
-            },
-          },
-        ]
-      );
-    } else {
-      Alert.alert('Status Note', `${asset.name} is currently under ${asset.status}. Update work order in Maintenance tab.`);
+  const openDetail = async (asset: Asset) => {
+    setSelectedAsset(asset);
+    setDetailLoading(true);
+    try {
+      const res = await apiFetch<{ data: Asset }>(`/api/v1/assets/${asset.id}`);
+      if (res?.data) setSelectedAsset(res.data);
+    } catch { /* use the list data */ } finally {
+      setDetailLoading(false);
     }
   };
 
-  const handleCreateAsset = () => {
-    if (!name.trim() || !serialNo.trim()) {
-      Alert.alert('Validation Error', 'Please enter both Asset Name and Serial Number.');
-      return;
+  const handleRegister = async () => {
+    if (!regForm.name) return Alert.alert('Required', 'Asset name is required');
+    setRegistering(true);
+    try {
+      await apiFetch('/api/v1/assets', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: regForm.name,
+          categoryId: regForm.categoryId || undefined,
+          condition: regForm.condition,
+          isShared: regForm.isShared,
+          description: regForm.description || undefined
+        })
+      });
+      setRegisterModal(false);
+      setRegForm({ name: '', categoryId: '', condition: 'NEW', isShared: false, description: '' });
+      fetchAssets(1, true);
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setRegistering(false);
     }
-    const maxTag = Math.max(...assets.map((a) => parseInt(a.tag.replace('AF-', '') || '0', 10)));
-    const nextTag = `AF-${String(maxTag + 1).padStart(4, '0')}`;
-    const newAsset: Asset = {
-      id: Math.random().toString(36).slice(2, 9),
-      tag: nextTag,
-      name: name.trim(),
-      category,
-      status: 'Available',
-      location,
-      department,
-      serialNo: serialNo.trim(),
-      assignedTo: '',
-    };
-    setAssets([newAsset, ...assets]);
-    setModalVisible(false);
-    setName('');
-    setSerialNo('');
-    Alert.alert('Asset Created', `Successfully registered ${newAsset.name} as ${newAsset.tag}.`);
   };
+
+  const handleAllocate = async () => {
+    if (!allocForm.employeeId || !selectedAsset) return Alert.alert('Required', 'Employee ID is required');
+    setAllocating(true);
+    try {
+      const payload: any = { employeeId: allocForm.employeeId };
+      if (allocForm.expectedReturn) payload.expectedReturn = new Date(allocForm.expectedReturn).toISOString();
+
+      await apiFetch(`/api/v1/allocations`, {
+        method: 'POST',
+        body: JSON.stringify({ ...payload, assetId: selectedAsset.id })
+      });
+      setAllocateModal(false);
+      setAllocForm({ employeeId: '', expectedReturn: '' });
+      openDetail(selectedAsset);
+      fetchAssets(page, true);
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setAllocating(false);
+    }
+  };
+
+  const handleReturn = async () => {
+    if (!selectedAsset) return;
+    Alert.alert('Return Asset', 'Are you returning this asset to the inventory?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Return', onPress: async () => {
+        try {
+          // Typically we'd find the active allocation ID, but let's assume the backend has an endpoint or we mark it available
+          await apiFetch(`/api/v1/assets/${selectedAsset.id}/return`, { method: 'POST', body: JSON.stringify({ condition: 'GOOD', notes: 'Returned via mobile' }) });
+          openDetail(selectedAsset);
+          fetchAssets(page, true);
+        } catch (err: any) {
+          Alert.alert('Error', err.message);
+        }
+      }}
+    ]);
+  };
+
+  const renderAsset = ({ item }: { item: Asset }) => (
+    <TouchableOpacity onPress={() => openDetail(item)} activeOpacity={0.85}>
+      <NeoCard style={styles.assetCard}>
+        <View style={styles.assetTop}>
+          <View style={styles.assetIconBox}>
+            <Text style={styles.assetIcon}>📦</Text>
+          </View>
+          <View style={styles.assetMeta}>
+            <Text style={styles.assetName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.assetCode}>{item.assetCode}</Text>
+          </View>
+          <NeoBadge label={item.status.replace(/_/g, ' ')} variant={STATUS_BADGE[item.status] || 'neutral'} />
+        </View>
+
+        <View style={styles.assetDetails}>
+          {item.category && <Text style={styles.detailChip}>🏷️ {item.category.name}</Text>}
+          {item.department && <Text style={styles.detailChip}>🏢 {item.department.name}</Text>}
+          {item.location && <Text style={styles.detailChip}>📍 {item.location.name}</Text>}
+        </View>
+
+        <View style={styles.assetFooter}>
+          <Text style={styles.assetValue}>{formatCurrency(item.currentValue || item.purchaseCost)}</Text>
+          <Text style={styles.assetCondition}>{item.condition}</Text>
+        </View>
+      </NeoCard>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.headerTitle}>Asset Catalog</Text>
-          <Text style={styles.headerSub}>{filteredAssets.length} total units matched</Text>
-        </View>
-        <View style={styles.topActions}>
-          <TouchableOpacity
-            onPress={() => router.push('/qr-scanner')}
-            style={styles.qrBtn}
-          >
-            <Text style={styles.qrBtnText}>📷 QR</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Asset Registry</Text>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity onPress={() => router.push('/qr-scanner')} style={styles.qrBtn}>
+            <Text style={styles.qrBtnTxt}>📷 QR Scan</Text>
           </TouchableOpacity>
-          <NeoButton
-            label="+ Add Asset"
-            size="sm"
-            onPress={() => setModalVisible(true)}
-          />
+          {(activeOrg?.role === 'ADMIN' || activeOrg?.role === 'ASSET_MANAGER') && (
+            <TouchableOpacity onPress={() => setRegisterModal(true)} style={styles.qrBtn}>
+              <Text style={styles.qrBtnTxt}>+ New</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchBox}>
-        <Text style={styles.searchIcon}>🔍</Text>
+      {/* Search */}
+      <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search tag, name, serial number, or custodian..."
+          placeholder="Search by name, tag or serial..."
           placeholderTextColor="#687082"
           value={search}
           onChangeText={setSearch}
         />
-        {search ? (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Text style={styles.clearIcon}>✕</Text>
+      </View>
+
+      {/* Status Filters */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterContent}>
+        {STATUSES.map((s) => (
+          <TouchableOpacity
+            key={s || 'ALL'}
+            onPress={() => setStatusFilter(s)}
+            style={[styles.filterChip, statusFilter === s && styles.filterChipActive]}
+          >
+            <Text style={[styles.filterChipTxt, statusFilter === s && styles.filterChipTxtActive]}>
+              {s || 'All'}
+            </Text>
           </TouchableOpacity>
-        ) : null}
-      </View>
-
-      {/* Category Pills */}
-      <View style={styles.filtersContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-          {CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              onPress={() => setCategoryFilter(cat)}
-              style={[styles.filterPill, categoryFilter === cat && styles.filterPillActive]}
-            >
-              <Text style={[styles.filterText, categoryFilter === cat && styles.filterTextActive]}>
-                {cat}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Status Pills */}
-      <View style={[styles.filtersContainer, { marginBottom: 16 }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-          {STATUSES.map((st) => (
-            <TouchableOpacity
-              key={st}
-              onPress={() => setStatusFilter(st)}
-              style={[styles.statusPill, statusFilter === st && styles.statusPillActive]}
-            >
-              <Text style={[styles.statusText, statusFilter === st && styles.statusTextActive]}>
-                ● {st}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Assets List */}
-      <ScrollView
-        style={styles.listScroll}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {filteredAssets.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyIcon}>📦</Text>
-            <Text style={styles.emptyTitle}>No assets matched your filter</Text>
-            <Text style={styles.emptySub}>Try adjusting the category, status, or query keywords.</Text>
-          </View>
-        ) : (
-          filteredAssets.map((item) => (
-            <NeoCard key={item.id} style={styles.assetCard}>
-              <View style={styles.assetCardHeader}>
-                <View style={styles.tagBox}>
-                  <Text style={styles.tagText}>{item.tag}</Text>
-                  <Text style={styles.categoryText}> • {item.category}</Text>
-                </View>
-                <NeoBadge label={item.status} variant={getStatusVariant(item.status)} />
-              </View>
-
-              <Text style={styles.assetName}>{item.name}</Text>
-              <Text style={styles.serialText}>Serial No: {item.serialNo}</Text>
-
-              <View style={styles.metaBox}>
-                <View style={styles.metaRow}>
-                  <Text style={styles.metaLabel}>📍 Location:</Text>
-                  <Text style={styles.metaValue}>{item.location}</Text>
-                </View>
-                {item.department ? (
-                  <View style={styles.metaRow}>
-                    <Text style={styles.metaLabel}>🏢 Department:</Text>
-                    <Text style={styles.metaValue}>{item.department}</Text>
-                  </View>
-                ) : null}
-                {item.assignedTo ? (
-                  <View style={styles.metaRow}>
-                    <Text style={styles.metaLabel}>👤 Assigned To:</Text>
-                    <Text style={[styles.metaValue, { color: NeoColors.primary, fontWeight: '700' }]}>
-                      {item.assignedTo}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-
-              <View style={styles.cardFoot}>
-                <NeoButton
-                  label={item.status === 'Available' ? 'Check Out ›' : item.status === 'Allocated' ? 'Check In ›' : 'View Status ›'}
-                  variant={item.status === 'Available' ? 'primary' : 'secondary'}
-                  size="sm"
-                  onPress={() => handleCheckInOut(item)}
-                />
-                <TouchableOpacity
-                  onPress={() => Alert.alert('Asset QR Tag', `Simulating QR display for ${item.tag} — ${item.serialNo}`)}
-                  style={styles.actionIconBtn}
-                >
-                  <Text style={styles.actionIconText}>🏷 QR Tag</Text>
-                </TouchableOpacity>
-              </View>
-            </NeoCard>
-          ))
-        )}
+        ))}
       </ScrollView>
 
-      {/* Modal for Adding New Asset */}
-      <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+      {/* Count */}
+      {meta && (
+        <Text style={styles.countTxt}>
+          {meta.total} asset{meta.total !== 1 ? 's' : ''} found
+        </Text>
+      )}
+
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={NeoColors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={assets}
+          keyExtractor={(i) => i.id}
+          renderItem={renderAsset}
+          contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={NeoColors.primary} />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={loadingMore ? <ActivityIndicator color={NeoColors.primary} style={{ marginVertical: 12 }} /> : null}
+          ListEmptyComponent={
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyIcon}>📦</Text>
+              <Text style={styles.emptyTxt}>No assets found</Text>
+              <Text style={styles.emptySubTxt}>Try adjusting your search or status filter</Text>
+            </View>
+          }
+        />
+      )}
+
+      {/* Asset Detail Modal */}
+      <Modal visible={!!selectedAsset} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSelectedAsset(null)}>
+        {selectedAsset && (
+          <SafeAreaView style={styles.modalSafe}>
             <View style={styles.modalHead}>
-              <Text style={styles.modalTitle}>Add New Asset</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalTitle} numberOfLines={1}>{selectedAsset.name}</Text>
+              <TouchableOpacity onPress={() => setSelectedAsset(null)}>
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalForm} showsVerticalScrollIndicator={false}>
-              <Text style={styles.fieldLabel}>ASSET NAME *</Text>
-              <TextInput
-                style={styles.fieldInput}
-                placeholder="e.g. iPad Pro 12.9 M4"
-                placeholderTextColor="#687082"
-                value={name}
-                onChangeText={setName}
-              />
+            {detailLoading ? (
+              <ActivityIndicator color={NeoColors.primary} style={{ marginTop: 40 }} />
+            ) : (
+              <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalContent}>
+                {/* Status Row */}
+                <View style={styles.detailStatusRow}>
+                  <NeoBadge label={selectedAsset.status.replace(/_/g, ' ')} variant={STATUS_BADGE[selectedAsset.status] || 'neutral'} />
+                  <NeoBadge label={selectedAsset.condition} variant="info" />
+                  {selectedAsset.isShared && <NeoBadge label="SHARED" variant="warning" />}
+                </View>
 
-              <Text style={styles.fieldLabel}>CATEGORY *</Text>
-              <View style={styles.modalPills}>
-                {['Electronics', 'Furniture', 'Vehicles'].map((c) => (
-                  <TouchableOpacity
-                    key={c}
-                    onPress={() => setCategory(c)}
-                    style={[styles.modalPill, category === c && styles.modalPillActive]}
-                  >
-                    <Text style={[styles.modalPillText, category === c && styles.modalPillTextActive]}>
-                      {c}
-                    </Text>
+                {/* Actions */}
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                  {selectedAsset.status === 'AVAILABLE' && ['ADMIN', 'ASSET_MANAGER', 'DEPARTMENT_HEAD'].includes(activeOrg?.role || '') && (
+                    <NeoButton label="Allocate" variant="primary" style={{ flex: 1 }} onPress={() => setAllocateModal(true)} />
+                  )}
+                  {selectedAsset.status === 'ALLOCATED' && (
+                    <NeoButton label="Return Asset" variant="outline" style={{ flex: 1 }} onPress={handleReturn} />
+                  )}
+                </View>
+
+                <NeoCard style={styles.detailCard}>
+                  <DetailRow label="Asset Code" value={selectedAsset.assetCode} />
+                  <DetailRow label="Serial Number" value={selectedAsset.serialNumber} />
+                  <DetailRow label="Category" value={selectedAsset.category?.name} />
+                  <DetailRow label="Department" value={selectedAsset.department?.name} />
+                  <DetailRow label="Location" value={selectedAsset.location?.name} />
+                </NeoCard>
+
+                <NeoCard style={styles.detailCard}>
+                  <Text style={styles.detailSectionTitle}>Financial Details</Text>
+                  <DetailRow label="Purchase Cost" value={formatCurrency(selectedAsset.purchaseCost)} />
+                  <DetailRow label="Current Value" value={formatCurrency(selectedAsset.currentValue)} />
+                  <DetailRow label="Purchase Date" value={formatDate(selectedAsset.purchaseDate)} />
+                  <DetailRow label="Warranty Expiry" value={formatDate(selectedAsset.warrantyExpiry)} />
+                </NeoCard>
+
+                {selectedAsset.description && (
+                  <NeoCard style={styles.detailCard}>
+                    <Text style={styles.detailSectionTitle}>Description</Text>
+                    <Text style={styles.descriptionTxt}>{selectedAsset.description}</Text>
+                  </NeoCard>
+                )}
+              </ScrollView>
+            )}
+          </SafeAreaView>
+        )}
+      </Modal>
+
+      {/* Registration Modal */}
+      <Modal visible={registerModal} transparent animationType="slide">
+        <View style={styles.bottomOverlay}>
+          <View style={styles.bottomSheet}>
+            <View style={styles.modalHead}>
+              <Text style={styles.modalTitle}>Register Asset</Text>
+              <TouchableOpacity onPress={() => setRegisterModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.label}>NAME *</Text>
+              <TextInput style={styles.input} placeholder="MacBook Pro 16" placeholderTextColor="#687082" value={regForm.name} onChangeText={v => setRegForm({...regForm, name: v})} />
+              
+              <Text style={styles.label}>CONDITION</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+                {['NEW', 'GOOD', 'FAIR'].map(c => (
+                  <TouchableOpacity key={c} onPress={() => setRegForm({...regForm, condition: c})} style={[styles.roleBtn, regForm.condition === c && styles.roleBtnActive]}>
+                    <Text style={[styles.roleTxt, regForm.condition === c && styles.roleTxtActive]}>{c}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.fieldLabel}>SERIAL NUMBER *</Text>
-              <TextInput
-                style={styles.fieldInput}
-                placeholder="e.g. SN-2026-8891"
-                placeholderTextColor="#687082"
-                value={serialNo}
-                onChangeText={setSerialNo}
-              />
+              <Text style={styles.label}>IS SHARED / BOOKABLE?</Text>
+              <TouchableOpacity onPress={() => setRegForm({...regForm, isShared: !regForm.isShared})} style={[styles.roleBtn, regForm.isShared && styles.roleBtnActive, { alignSelf: 'flex-start', marginBottom: 14 }]}>
+                <Text style={[styles.roleTxt, regForm.isShared && styles.roleTxtActive]}>{regForm.isShared ? 'YES' : 'NO'}</Text>
+              </TouchableOpacity>
 
-              <Text style={styles.fieldLabel}>DEPARTMENT</Text>
-              <TextInput
-                style={styles.fieldInput}
-                placeholder="e.g. Engineering, Facilities"
-                placeholderTextColor="#687082"
-                value={department}
-                onChangeText={setDepartment}
-              />
+              <NeoButton label={registering ? "Saving..." : "Register"} variant="primary" onPress={handleRegister} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
-              <Text style={styles.fieldLabel}>LOCATION</Text>
-              <TextInput
-                style={styles.fieldInput}
-                placeholder="e.g. Mumbai HQ — Floor 4"
-                placeholderTextColor="#687082"
-                value={location}
-                onChangeText={setLocation}
-              />
+      {/* Allocate Modal */}
+      <Modal visible={allocateModal} transparent animationType="slide">
+        <View style={styles.bottomOverlay}>
+          <View style={styles.bottomSheet}>
+            <View style={styles.modalHead}>
+              <Text style={styles.modalTitle}>Allocate {selectedAsset?.assetCode}</Text>
+              <TouchableOpacity onPress={() => setAllocateModal(false)}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.label}>EMPLOYEE ID *</Text>
+              <TextInput style={styles.input} placeholder="Enter Employee UUID" placeholderTextColor="#687082" value={allocForm.employeeId} onChangeText={v => setAllocForm({...allocForm, employeeId: v})} autoCapitalize="none" />
+              
+              <Text style={styles.label}>EXPECTED RETURN DATE (Optional)</Text>
+              <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#687082" value={allocForm.expectedReturn} onChangeText={v => setAllocForm({...allocForm, expectedReturn: v})} />
 
-              <View style={styles.modalActions}>
-                <NeoButton
-                  label="Cancel"
-                  variant="ghost"
-                  onPress={() => setModalVisible(false)}
-                  style={{ flex: 1 }}
-                />
-                <NeoButton
-                  label="Create Asset"
-                  variant="primary"
-                  onPress={handleCreateAsset}
-                  style={{ flex: 1.5 }}
-                />
-              </View>
+              <NeoButton label={allocating ? "Allocating..." : "Confirm Allocation"} variant="primary" onPress={handleAllocate} />
             </ScrollView>
           </View>
         </View>
@@ -381,312 +432,70 @@ export default function AssetsScreen() {
   );
 }
 
+function DetailRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: NeoColors.background,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    marginBottom: 14,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-  },
-  headerSub: {
-    fontSize: 12,
-    color: '#A0A6B2',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  topActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  qrBtn: {
-    backgroundColor: '#1E2233',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#2D334A',
-  },
-  qrBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#161923',
-    marginHorizontal: Spacing.four,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#252A3E',
-    marginBottom: 14,
-  },
-  searchIcon: {
-    fontSize: 16,
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 14,
-    paddingVertical: 12,
-  },
-  clearIcon: {
-    color: '#A0A6B2',
-    fontSize: 18,
-    padding: 4,
-  },
-  filtersContainer: {
-    marginHorizontal: -Spacing.four,
-  },
-  filterScroll: {
-    paddingHorizontal: Spacing.four,
-    gap: 8,
-  },
-  filterPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#161923',
-    borderWidth: 1,
-    borderColor: '#252A3E',
-  },
-  filterPillActive: {
-    backgroundColor: NeoColors.primary,
-    borderColor: '#FF8533',
-  },
-  filterText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#A0A6B2',
-  },
-  filterTextActive: {
-    color: '#FFFFFF',
-  },
-  statusPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  statusPillActive: {
-    backgroundColor: 'rgba(255, 102, 0, 0.2)',
-    borderColor: NeoColors.primary,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#8E96A4',
-  },
-  statusTextActive: {
-    color: NeoColors.primary,
-  },
-  listScroll: {
-    flex: 1,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.four,
-    paddingBottom: BottomTabInset + Spacing.five,
-    gap: 16,
-  },
-  assetCard: {
-    padding: 18,
-  },
-  assetCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  tagBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tagText: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: NeoColors.primary,
-  },
-  categoryText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#A0A6B2',
-  },
-  assetName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  serialText: {
-    fontSize: 12,
-    color: '#687082',
-    fontFamily: 'monospace',
-    marginBottom: 12,
-  },
-  metaBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 14,
-    padding: 12,
-    gap: 6,
-    marginBottom: 16,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  metaLabel: {
-    fontSize: 12,
-    color: '#8E96A4',
-    fontWeight: '500',
-  },
-  metaValue: {
-    fontSize: 12,
-    color: '#E5E7EB',
-    fontWeight: '600',
-  },
-  cardFoot: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-    paddingTop: 12,
-  },
-  actionIconBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  actionIconText: {
-    color: '#A0A6B2',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  emptyBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 6,
-  },
-  emptySub: {
-    fontSize: 13,
-    color: '#8E96A4',
-    textAlign: 'center',
-    maxWidth: 280,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    width: '100%',
-    maxHeight: '85%',
-    backgroundColor: '#161923',
-    borderRadius: 28,
-    padding: 24,
-    borderWidth: 1.5,
-    borderColor: NeoColors.primary,
-  },
-  modalHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#252A3E',
-    paddingBottom: 14,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  modalClose: {
-    fontSize: 22,
-    color: '#A0A6B2',
-    padding: 4,
-  },
-  modalForm: {
-    gap: 12,
-  },
-  fieldLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#A0A6B2',
-    letterSpacing: 0.8,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  fieldInput: {
-    backgroundColor: '#1E2233',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    color: '#FFFFFF',
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#2D334A',
-  },
-  modalPills: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 4,
-  },
-  modalPill: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: '#1E2233',
-    borderWidth: 1,
-    borderColor: '#2D334A',
-    alignItems: 'center',
-  },
-  modalPillActive: {
-    backgroundColor: NeoColors.primary,
-    borderColor: '#FF8533',
-  },
-  modalPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#A0A6B2',
-  },
-  modalPillTextActive: {
-    color: '#FFFFFF',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
-    marginBottom: 10,
-  },
+  safeArea: { flex: 1, backgroundColor: NeoColors.background },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.four, paddingTop: 16, paddingBottom: 10 },
+  headerTitle: { fontSize: 22, fontWeight: '900', color: '#FFFFFF' },
+  qrBtn: { backgroundColor: 'rgba(255,102,0,0.12)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,102,0,0.3)' },
+  qrBtnTxt: { color: NeoColors.primary, fontSize: 12, fontWeight: '800' },
+  searchRow: { paddingHorizontal: Spacing.four, marginBottom: 10 },
+  searchInput: { backgroundColor: '#161923', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: '#FFFFFF', fontSize: 14, borderWidth: 1, borderColor: '#2D334A' },
+  filterScroll: { flexGrow: 0 },
+  filterContent: { paddingHorizontal: Spacing.four, gap: 8, marginBottom: 8 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#161923', borderWidth: 1, borderColor: '#2D334A' },
+  filterChipActive: { backgroundColor: 'rgba(255,102,0,0.15)', borderColor: NeoColors.primary },
+  filterChipTxt: { fontSize: 12, color: '#A0A6B2', fontWeight: '700' },
+  filterChipTxtActive: { color: NeoColors.primary },
+  countTxt: { fontSize: 11, color: '#687082', paddingHorizontal: Spacing.four, marginBottom: 4, fontWeight: '600' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  listContent: { paddingHorizontal: Spacing.four, paddingBottom: 120 },
+  assetCard: { marginBottom: 10, padding: 14 },
+  assetTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  assetIconBox: { width: 42, height: 42, borderRadius: 12, backgroundColor: 'rgba(255,102,0,0.1)', justifyContent: 'center', alignItems: 'center' },
+  assetIcon: { fontSize: 20 },
+  assetMeta: { flex: 1 },
+  assetName: { fontSize: 15, fontWeight: '800', color: '#FFFFFF', marginBottom: 2 },
+  assetCode: { fontSize: 11, color: '#A0A6B2' },
+  assetDetails: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  detailChip: { fontSize: 11, color: '#A0A6B2', backgroundColor: 'rgba(255,255,255,0.04)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  assetFooter: { flexDirection: 'row', justifyContent: 'space-between' },
+  assetValue: { fontSize: 13, fontWeight: '800', color: '#10B981' },
+  assetCondition: { fontSize: 11, color: '#A0A6B2', fontWeight: '700' },
+  emptyBox: { alignItems: 'center', paddingTop: 60, gap: 8 },
+  emptyIcon: { fontSize: 48 },
+  emptyTxt: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  emptySubTxt: { fontSize: 13, color: '#687082', textAlign: 'center' },
+  // Modal
+  modalSafe: { flex: 1, backgroundColor: NeoColors.background },
+  modalHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.four, borderBottomWidth: 1, borderBottomColor: '#252A3E', marginBottom: 10 },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: '#FFFFFF', flex: 1, marginRight: 12 },
+  modalClose: { fontSize: 22, color: '#A0A6B2', fontWeight: '800' },
+  modalScroll: { flex: 1 },
+  modalContent: { padding: Spacing.four, paddingBottom: 40 },
+  detailStatusRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
+  detailCard: { marginBottom: 12, padding: 16 },
+  detailSectionTitle: { fontSize: 12, fontWeight: '800', color: '#8E96A4', letterSpacing: 0.6, marginBottom: 12 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#1E2233' },
+  detailLabel: { fontSize: 13, color: '#A0A6B2', fontWeight: '600' },
+  detailValue: { fontSize: 13, color: '#FFFFFF', fontWeight: '700', maxWidth: '55%', textAlign: 'right' },
+  descriptionTxt: { fontSize: 13, color: '#A0A6B2', lineHeight: 20 },
+  // Bottom Sheet
+  bottomOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  bottomSheet: { backgroundColor: '#161923', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, maxHeight: '85%' },
+  label: { fontSize: 11, fontWeight: '800', color: '#8E96A4', letterSpacing: 0.8, marginBottom: 6 },
+  input: { backgroundColor: '#1E2233', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: '#FFFFFF', fontSize: 14, borderWidth: 1, borderColor: '#2D334A', marginBottom: 14 },
+  roleBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: '#1E2233', borderWidth: 1, borderColor: '#2D334A' },
+  roleBtnActive: { backgroundColor: 'rgba(255,102,0,0.15)', borderColor: NeoColors.primary },
+  roleTxt: { fontSize: 12, color: '#A0A6B2', fontWeight: '700' },
+  roleTxtActive: { color: NeoColors.primary },
 });

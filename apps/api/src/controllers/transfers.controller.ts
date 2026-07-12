@@ -21,6 +21,19 @@ export const getTransfers = async (
       ...(assetId && { assetId }),
     };
 
+    if (req.role?.roleType === "EMPLOYEE" && req.employeeProfile) {
+      where.OR = [
+        { fromEmployeeId: req.employeeProfile.id },
+        { toEmployeeId: req.employeeProfile.id },
+        { requestedById: req.user?.id },
+      ];
+    } else if (req.role?.roleType === "DEPARTMENT_HEAD" && req.employeeProfile?.departmentId) {
+      where.OR = [
+        { fromEmployee: { departmentId: req.employeeProfile.departmentId } },
+        { toEmployee: { departmentId: req.employeeProfile.departmentId } },
+      ];
+    }
+
     const transfers = await db.transferRequest.findMany({
       where,
       include: {

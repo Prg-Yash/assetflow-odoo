@@ -73,7 +73,7 @@ export async function listAllMedia(
   try {
     const limit = req.query.limit ? Number(req.query.limit) : undefined;
 
-    if (req.query.limit && (!Number.isFinite(limit) || limit <= 0)) {
+    if (typeof limit === "number" && (!Number.isFinite(limit) || limit <= 0)) {
       throw new ApiError(400, "limit must be a positive number.");
     }
 

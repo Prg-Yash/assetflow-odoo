@@ -23,6 +23,18 @@ export const getAllocations = async (
       ...(status && { status }),
     };
 
+    // Role-Based Scoping according to PDF Page 5:
+    if (req.role?.roleType === "EMPLOYEE") {
+      if (!req.employeeProfile) {
+        throw new ApiError(403, "Employee profile not found for the active user in this organization.");
+      }
+      // Employee strictly views assets allocated to them
+      where.employeeId = req.employeeProfile.id;
+    } else if (req.role?.roleType === "DEPARTMENT_HEAD" && req.employeeProfile?.departmentId) {
+      // Department Head views assets allocated within their department
+      where.employee = { departmentId: req.employeeProfile.departmentId };
+    }
+
     const allocations = await db.allocation.findMany({
       where,
       include: {
@@ -88,6 +100,15 @@ export const createAllocation = async (
 
     if (!employee) {
       throw new ApiError(404, "Target employee not found");
+    }
+
+    if (req.role?.roleType === "DEPARTMENT_HEAD" && req.employeeProfile?.departmentId) {
+      if (asset.departmentId && asset.departmentId !== req.employeeProfile.departmentId) {
+        throw new ApiError(403, "Forbidden: Department Heads can only allocate assets assigned to their department.");
+      }
+      if (employee.departmentId !== req.employeeProfile.departmentId) {
+        throw new ApiError(403, "Forbidden: Department Heads can only allocate assets to employees within their department.");
+      }
     }
 
     const allocation = await db.$transaction(async (tx) => {
@@ -197,6 +218,67 @@ export const returnAllocation = async (
     res.status(200).json({
       success: true,
       data: returned,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const requestReturn = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const organizationId = req.organizationId!;
+    const id = String(req.params.id);
+    const { reason } = req.body;
+
+    const existing = await db.allocation.findFirst({
+      where: { id, organizationId, status: "ACTIVE" },
+      include: { asset: true, employee: { include: { user: true } } },
+    });
+
+    if (!existing) {
+      throw new ApiError(404, "Active allocation record not found");
+    }
+
+    // If caller is Employee, verify they are the actual holder of this allocation
+    if (req.role?.roleType === "EMPLOYEE" && existing.employeeId !== req.employeeProfile?.id) {
+      throw new ApiError(403, "Forbidden: You can only initiate return requests for assets allocated to you.");
+    }
+
+    const updated = await db.allocation.update({
+      where: { id: existing.id },
+      data: {
+        remarks: `[RETURN REQUESTED on ${new Date().toISOString().split("T")[0]}]: ${reason || "No reason provided"}`,
+      },
+      include: { asset: true, employee: { include: { user: true } } },
+    });
+
+    await recordActivityLog({
+      organizationId,
+      userId: req.user?.id,
+      entity: "Allocation",
+      entityId: id,
+      action: "RETURN_REQUESTED",
+      metadata: { assetCode: existing.asset.assetCode, reason },
+    });
+
+    // Notify Asset Manager / Department Head
+    if (existing.allocatedById) {
+      await createNotification({
+        organizationId,
+        userId: existing.allocatedById,
+        title: "Asset Return Requested",
+        body: `Employee ${existing.employee.user.name} requested to return ${existing.asset.name} (${existing.asset.assetCode}). Reason: ${reason || "N/A"}`,
+        type: "TRANSFER_REQUEST",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: updated,
     });
   } catch (error) {
     next(error);

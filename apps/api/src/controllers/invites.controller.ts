@@ -114,6 +114,7 @@ export const acceptInvite = async (
     }
 
     await db.$transaction(async (tx) => {
+      // 1. Update legacy User fields (backward compat)
       await tx.user.update({
         where: { id: userId },
         data: {
@@ -122,6 +123,45 @@ export const acceptInvite = async (
         },
       });
 
+      // 2. Check if membership already exists (e.g. accepted duplicate invite)
+      const existingMembership = await tx.organizationMember.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: invite.organizationId,
+            userId,
+          },
+        },
+      });
+
+      if (!existingMembership) {
+        // 3. Create the M:N OrganizationMember row with the invited role
+        const isFirstOrg = await tx.organizationMember.count({ where: { userId } }) === 0;
+        await tx.organizationMember.create({
+          data: {
+            organizationId: invite.organizationId,
+            userId,
+            roleId: invite.roleId,  // The exact role Admin chose when sending the invite
+            isDefault: isFirstOrg,
+          },
+        });
+
+        // 4. Generate auto employee code
+        const empCount = await tx.employee.count({ where: { organizationId: invite.organizationId } });
+        const employeeCode = `EMP-${String(empCount + 1).padStart(4, "0")}`;
+
+        // 5. Create Employee profile inside the organization
+        await tx.employee.create({
+          data: {
+            organizationId: invite.organizationId,
+            userId,
+            employeeCode,
+            designation: invite.role.name,
+            isActive: true,
+          },
+        });
+      }
+
+      // 6. Mark invite as accepted
       await tx.invite.update({
         where: { id: invite.id },
         data: { accepted: true },

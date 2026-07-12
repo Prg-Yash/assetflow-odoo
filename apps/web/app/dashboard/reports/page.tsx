@@ -209,7 +209,7 @@ function LineChartSVG({ data }: { data: { month: string; value: number }[] }) {
       {/* Points */}
       {points.map((p, i) => (
         <g key={i}>
-          <circle cx={p.x} cy={p.y} r="4" className="fill-[hsl(240_10%_8%)]" stroke="rgb(244,114,100)" strokeWidth="2" />
+          <circle cx={p.x} cy={p.y} r="4" className="fill-card" stroke="rgb(244,114,100)" strokeWidth="2" />
           {/* X label */}
           <text
             x={p.x}
@@ -237,8 +237,8 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Reports &amp; Analytics</h2>
-          <p className="text-sm text-white/40">
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">Reports &amp; Analytics</h2>
+          <p className="text-sm text-muted-foreground">
             Utilization, maintenance frequency, most-used / idle assets, and booking heatmaps.
           </p>
         </div>
@@ -246,14 +246,14 @@ export default function ReportsPage() {
           <select
             value={selectedRange}
             onChange={(e) => setSelectedRange(e.target.value)}
-            className="rounded-lg border border-white/10 bg-[hsl(240_10%_12%)] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none pr-8 cursor-pointer"
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none pr-8 cursor-pointer"
           >
             <option>Last 30 Days</option>
             <option>This Quarter</option>
             <option>This Year</option>
             <option>All Time</option>
           </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/40 text-xs">▼</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground text-xs">▼</span>
         </div>
       </div>
 
@@ -261,7 +261,7 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Utilization by Department — Bar Chart */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 space-y-4 shadow-xl">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 shadow-xl">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-accent" />
             <h3 className="text-sm font-semibold text-accent">Utilization by department</h3>
@@ -270,7 +270,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Maintenance Frequency — Line Chart */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 space-y-4 shadow-xl">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 shadow-xl">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-rose-400" />
             <h3 className="text-sm font-semibold text-rose-400">Maintenance Frequency</h3>
@@ -283,14 +283,14 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Most used assets */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 space-y-4 shadow-xl">
-          <h3 className="text-base font-bold text-white">Most used assets</h3>
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 shadow-xl">
+          <h3 className="text-base font-bold text-foreground">Most used assets</h3>
           <div className="space-y-3">
             {MOST_USED.map((a, i) => (
               <div key={i} className="flex items-start gap-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 shrink-0" />
-                <div className="text-sm text-white/70">
-                  <span className="font-semibold text-white">{a.tag}</span>: {a.detail}
+                <div className="text-sm text-foreground/70">
+                  <span className="font-semibold text-foreground">{a.tag}</span>: {a.detail}
                 </div>
               </div>
             ))}
@@ -298,14 +298,14 @@ export default function ReportsPage() {
         </div>
 
         {/* Idle assets */}
-        <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 space-y-4 shadow-xl">
-          <h3 className="text-base font-bold text-white">Idle assets</h3>
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 shadow-xl">
+          <h3 className="text-base font-bold text-foreground">Idle assets</h3>
           <div className="space-y-3">
             {IDLE_ASSETS.map((a, i) => (
               <div key={i} className="flex items-start gap-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
-                <div className="text-sm text-white/70">
-                  <span className="font-semibold text-white">{a.tag}</span> : {a.detail}
+                <div className="text-sm text-foreground/70">
+                  <span className="font-semibold text-foreground">{a.tag}</span> : {a.detail}
                 </div>
               </div>
             ))}
@@ -314,17 +314,17 @@ export default function ReportsPage() {
       </div>
 
       {/* ─── Maintenance / Retirement ─────────────────────────────────── */}
-      <div className="rounded-2xl border border-white/10 bg-[hsl(240_10%_8%)] p-6 space-y-4 shadow-xl">
+      <div className="rounded-2xl border border-border bg-card p-6 space-y-4 shadow-xl">
         <div className="flex items-center gap-2">
           <Wrench className="w-4 h-4 text-amber-400" />
-          <h3 className="text-base font-bold text-white">Assets due for maintenance / nearing retirement</h3>
+          <h3 className="text-base font-bold text-foreground">Assets due for maintenance / nearing retirement</h3>
         </div>
         <div className="space-y-3">
           {MAINTENANCE_DUE.map((a, i) => (
             <div key={i} className="flex items-start gap-3">
               <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0" />
-              <div className="text-sm text-white/70">
-                <span className="font-semibold text-white">{a.tag}</span> : {a.detail}
+              <div className="text-sm text-foreground/70">
+                <span className="font-semibold text-foreground">{a.tag}</span> : {a.detail}
               </div>
             </div>
           ))}
@@ -333,7 +333,7 @@ export default function ReportsPage() {
 
       {/* ─── Export Button ─────────────────────────────────────────────── */}
       <div className="flex justify-start">
-        <button className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-6 py-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-950/20 active:scale-[0.98] flex items-center gap-2">
+        <button className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-6 py-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500 hover:text-foreground transition-all shadow-lg shadow-emerald-950/20 active:scale-[0.98] flex items-center gap-2">
           <Download className="w-4 h-4" />
           Export report
         </button>

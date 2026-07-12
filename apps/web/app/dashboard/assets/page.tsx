@@ -82,10 +82,10 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} rounded-2xl border border-white/10 bg-[hsl(240_10%_9%)] shadow-2xl shadow-black/60 overflow-hidden animate-in zoom-in-95 fade-in duration-200`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
-          <h3 className="text-base font-semibold text-white">{title}</h3>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-white hover:bg-white/8 transition-colors"><X className="w-4 h-4" /></button>
+      <div className={`relative z-10 w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} rounded-2xl border border-border bg-card shadow-xl overflow-hidden animate-in zoom-in-95 fade-in duration-200`}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"><X className="w-4 h-4" /></button>
         </div>
         <div className="px-6 py-5 max-h-[70vh] overflow-y-auto">{children}</div>
       </div>
@@ -96,14 +96,14 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-white/60 uppercase tracking-wide">{label}</label>
+      <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</label>
       {children}
     </div>
   )
 }
 
-const inputCls = 'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition'
-const selectCls = 'w-full rounded-lg border border-white/10 bg-[hsl(240_10%_12%)] px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none'
+const inputCls = 'w-full rounded-lg border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition'
+const selectCls = 'w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none'
 
 /* ─── Status badge ─────────────────────────────────────────────────────────── */
 
@@ -112,7 +112,7 @@ function StatusBadge({ status }: { status: AssetStatus }) {
     Available:   'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
     Allocated:   'text-sky-400 border-sky-500/30 bg-sky-500/10',
     Maintenance: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
-    Retired:     'text-white/40 border-white/10 bg-white/5',
+    Retired:     'text-muted-foreground border-border bg-muted',
   }
   const icons: Record<AssetStatus, React.ReactNode> = {
     Available:   <CheckCircle2 className="w-3 h-3" />,
@@ -147,19 +147,19 @@ function FilterDropdown({ label, options, value, onChange }: { label: string; op
           'flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm font-medium transition-all duration-150',
           value !== 'All'
             ? 'border-accent/40 bg-accent/10 text-accent'
-            : 'border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/8',
+            : 'border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted',
         ].join(' ')}
       >
         {label}{value !== 'All' && `: ${value}`}
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1.5 z-50 min-w-[160px] rounded-xl border border-white/10 bg-[hsl(240_10%_10%)] shadow-2xl shadow-black/50 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute top-full left-0 mt-1.5 z-50 min-w-[160px] rounded-xl border border-border bg-popover shadow-2xl shadow-black/50 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
           {options.map((opt) => (
             <button
               key={opt}
               onClick={() => { onChange(opt); setOpen(false) }}
-              className={`w-full text-left px-4 py-2 text-sm transition-colors ${opt === value ? 'text-accent bg-accent/10' : 'text-white/70 hover:text-white hover:bg-white/6'}`}
+              className={`w-full text-left px-4 py-2 text-sm transition-colors ${opt === value ? 'text-accent bg-accent/10' : 'text-foreground/70 hover:text-foreground hover:bg-muted'}`}
             >
               {opt}
             </button>
@@ -275,8 +275,8 @@ export default function AssetsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Assets</h2>
-          <p className="text-sm text-white/40">Asset registration and directory — {assets.length} total assets</p>
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">Assets</h2>
+          <p className="text-sm text-muted-foreground">Asset registration and directory — {assets.length} total assets</p>
         </div>
         <button
           id="register-asset-btn"
@@ -291,14 +291,14 @@ export default function AssetsPage() {
       {/* Search + filters */}
       <div className="space-y-3">
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
-          <QrCode className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
+          <QrCode className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/20 pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by tag, serial, or name…"
-            className="w-full rounded-lg border border-white/10 bg-white/5 pl-10 pr-10 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
+            className="w-full rounded-lg border border-border bg-input pl-10 pr-10 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
           />
         </div>
 
@@ -307,7 +307,7 @@ export default function AssetsPage() {
           <FilterDropdown label="Status" options={STATUSES} value={filterStatus} onChange={setFilterStatus} />
           <FilterDropdown label="Department" options={DEPARTMENTS} value={filterDepartment} onChange={setFilterDepartment} />
           {activeFilterCount > 0 && (
-            <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-white/40 hover:text-white transition-colors">
+            <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
               <X className="w-3 h-3" /> Clear filters ({activeFilterCount})
             </button>
           )}
@@ -315,32 +315,32 @@ export default function AssetsPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-white/8 overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/8 bg-white/3">
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Tag</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Name</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Category</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Location</th>
-                <th className="px-5 py-3.5 text-right text-xs font-semibold text-white/40 uppercase tracking-wider">Actions</th>
+              <tr className="border-b border-border bg-muted">
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tag</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Name</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Category</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Location</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-14 text-center">
                     <div className="space-y-2">
-                      <Package className="w-8 h-8 text-white/15 mx-auto" />
-                      <p className="text-sm text-white/30">No assets match your search or filters.</p>
+                      <Package className="w-8 h-8 text-foreground/15 mx-auto" />
+                      <p className="text-sm text-muted-foreground/80">No assets match your search or filters.</p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 paginated.map((asset) => (
-                  <tr key={asset.id} className="hover:bg-white/2 transition-colors group">
+                  <tr key={asset.id} className="hover:bg-muted transition-colors group">
                     <td className="px-5 py-4">
                       <span className="font-mono text-xs font-semibold text-accent bg-accent/10 px-2 py-1 rounded">
                         {asset.tag}
@@ -348,14 +348,14 @@ export default function AssetsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <div>
-                        <span className="font-medium text-white">{asset.name}</span>
+                        <span className="font-medium text-foreground">{asset.name}</span>
                         {asset.assignedTo && (
-                          <p className="text-xs text-white/35 mt-0.5">→ {asset.assignedTo}</p>
+                          <p className="text-xs text-foreground/35 mt-0.5">→ {asset.assignedTo}</p>
                         )}
                       </div>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="inline-flex px-2.5 py-0.5 rounded-md bg-white/6 text-white/60 text-xs font-medium border border-white/8">
+                      <span className="inline-flex px-2.5 py-0.5 rounded-md bg-muted text-muted-foreground text-xs font-medium border border-border">
                         {asset.category}
                       </span>
                     </td>
@@ -363,7 +363,7 @@ export default function AssetsPage() {
                       <StatusBadge status={asset.status} />
                     </td>
                     <td className="px-5 py-4">
-                      <span className="flex items-center gap-1.5 text-white/50">
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
                         <MapPin className="w-3 h-3 shrink-0" />
                         <span className="text-sm">{asset.location}</span>
                       </span>
@@ -372,13 +372,13 @@ export default function AssetsPage() {
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleEditClick(asset)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(asset.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -391,8 +391,8 @@ export default function AssetsPage() {
           </table>
         </div>
         {/* Footer row count with pagination */}
-        <div className="border-t border-white/5 px-5 py-3.5 flex flex-col sm:flex-row justify-between items-center bg-white/2 gap-3">
-          <p className="text-xs text-white/30 text-center sm:text-left">
+        <div className="border-t border-border px-5 py-3.5 flex flex-col sm:flex-row justify-between items-center bg-muted gap-3">
+          <p className="text-xs text-muted-foreground/80 text-center sm:text-left">
             Showing {filtered.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(filtered.length, currentPage * ITEMS_PER_PAGE)} of {filtered.length} assets
           </p>
           {totalPages > 1 && (
@@ -401,18 +401,18 @@ export default function AssetsPage() {
                 type="button"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1.5 rounded-lg border border-white/10 text-xs font-semibold text-white/70 hover:bg-white/5 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground/70 hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-colors"
               >
                 Previous
               </button>
-              <span className="text-xs text-white/40 px-1">
+              <span className="text-xs text-muted-foreground px-1">
                 Page {currentPage} of {totalPages}
               </span>
               <button
                 type="button"
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="px-3 py-1.5 rounded-lg border border-white/10 text-xs font-semibold text-white/70 hover:bg-white/5 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground/70 hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-colors"
               >
                 Next
               </button>
@@ -439,7 +439,7 @@ export default function AssetsPage() {
                   <select value={regForm.category} onChange={(e) => setRegForm((p) => ({ ...p, category: e.target.value }))} className={selectCls}>
                     <option>Electronics</option><option>Furniture</option><option>Vehicles</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
                 </div>
               </Field>
               <Field label="Status">
@@ -447,7 +447,7 @@ export default function AssetsPage() {
                   <select value={regForm.status} onChange={(e) => setRegForm((p) => ({ ...p, status: e.target.value as AssetStatus }))} className={selectCls}>
                     <option value="Available">Available</option><option value="Allocated">Allocated</option><option value="Maintenance">Maintenance</option><option value="Retired">Retired</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
                 </div>
               </Field>
             </div>
@@ -463,7 +463,7 @@ export default function AssetsPage() {
               <input type="text" placeholder="Employee name" value={regForm.assignedTo} onChange={(e) => setRegForm((p) => ({ ...p, assignedTo: e.target.value }))} className={inputCls} />
             </Field>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setShowRegister(false)} className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors">Cancel</button>
+              <button type="button" onClick={() => setShowRegister(false)} className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Cancel</button>
               <button type="submit" className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">Register Asset</button>
             </div>
           </form>
@@ -488,7 +488,7 @@ export default function AssetsPage() {
                   <select value={editForm.category} onChange={(e) => setEditForm((p) => ({ ...p, category: e.target.value }))} className={selectCls}>
                     <option>Electronics</option><option>Furniture</option><option>Vehicles</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
                 </div>
               </Field>
               <Field label="Status">
@@ -496,7 +496,7 @@ export default function AssetsPage() {
                   <select value={editForm.status} onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value as AssetStatus }))} className={selectCls}>
                     <option value="Available">Available</option><option value="Allocated">Allocated</option><option value="Maintenance">Maintenance</option><option value="Retired">Retired</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
                 </div>
               </Field>
             </div>
@@ -512,7 +512,7 @@ export default function AssetsPage() {
               <input type="text" value={editForm.assignedTo} onChange={(e) => setEditForm((p) => ({ ...p, assignedTo: e.target.value }))} className={inputCls} />
             </Field>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setEditingAsset(null)} className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors">Cancel</button>
+              <button type="button" onClick={() => setEditingAsset(null)} className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Cancel</button>
               <button type="submit" className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">Save Changes</button>
             </div>
           </form>

@@ -79,10 +79,10 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-white/10 bg-[hsl(240_10%_9%)] shadow-2xl shadow-black/60 overflow-hidden animate-in zoom-in-95 fade-in duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
-          <h3 className="text-base font-semibold text-white">{title}</h3>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-white hover:bg-white/8 transition-colors"><X className="w-4 h-4" /></button>
+      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-card shadow-xl overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"><X className="w-4 h-4" /></button>
         </div>
         <div className="px-6 py-5">{children}</div>
       </div>
@@ -91,15 +91,15 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1.5"><label className="block text-xs font-medium text-white/60 uppercase tracking-wide">{label}</label>{children}</div>
+  return <div className="space-y-1.5"><label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</label>{children}</div>
 }
 
-const inputCls = 'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition'
-const selectCls = 'w-full rounded-lg border border-white/10 bg-[hsl(240_10%_12%)] px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none'
+const inputCls = 'w-full rounded-lg border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition'
+const selectCls = 'w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none'
 
 function PriorityBadge({ priority }: { priority: Priority }) {
   const styles: Record<Priority, string> = {
-    Low:      'text-white/40 border-white/10 bg-white/5',
+    Low:      'text-muted-foreground border-border bg-muted',
     Medium:   'text-sky-400 border-sky-500/30 bg-sky-500/10',
     High:     'text-amber-400 border-amber-500/30 bg-amber-500/10',
     Critical: 'text-red-400 border-red-500/30 bg-red-500/10 animate-pulse',
@@ -112,7 +112,7 @@ function StatusBadge({ status }: { status: MaintenanceStatus }) {
     'Pending Approval': 'text-amber-400 border-amber-500/30 bg-amber-500/10',
     'In Progress':      'text-sky-400 border-sky-500/30 bg-sky-500/10',
     'Completed':        'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
-    'Rejected':         'text-white/30 border-white/10 bg-white/5 line-through',
+    'Rejected':         'text-muted-foreground/80 border-border bg-muted line-through',
   }
   return <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${s[status]}`}>{status}</span>
 }
@@ -190,8 +190,8 @@ export default function MaintenancePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Maintenance</h2>
-          <p className="text-sm text-white/40">Structured approval-based maintenance requests with automated tracking.</p>
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">Maintenance</h2>
+          <p className="text-sm text-muted-foreground">Structured approval-based maintenance requests with automated tracking.</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 shrink-0">
           <Plus className="w-4 h-4" /> Request Maintenance
@@ -204,10 +204,10 @@ export default function MaintenancePage() {
           { label: 'Pending Approval', count: requests.filter((r) => r.status === 'Pending Approval').length, color: 'text-amber-400' },
           { label: 'In Progress', count: requests.filter((r) => r.status === 'In Progress').length, color: 'text-sky-400' },
           { label: 'Completed', count: requests.filter((r) => r.status === 'Completed').length, color: 'text-emerald-400' },
-          { label: 'Total Requests', count: requests.length, color: 'text-white' },
+          { label: 'Total Requests', count: requests.length, color: 'text-foreground' },
         ].map((stat, i) => (
-          <div key={i} className="rounded-xl border border-white/8 bg-white/[0.02] p-4 space-y-1">
-            <p className="text-xs text-white/40 font-medium">{stat.label}</p>
+          <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-1">
+            <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
             <p className={`text-2xl font-bold ${stat.color}`}>{stat.count}</p>
           </div>
         ))}
@@ -215,41 +215,41 @@ export default function MaintenancePage() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
-        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search maintenance requests…" className="w-full sm:w-72 rounded-lg border border-white/10 bg-white/5 pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
+        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search maintenance requests…" className="w-full sm:w-72 rounded-lg border border-border bg-input pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition" />
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-white/8 overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/8 bg-white/3">
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Asset</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Requested By</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Issue Description</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Priority</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Cost</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3.5 text-right text-xs font-semibold text-white/40 uppercase tracking-wider">Actions</th>
+              <tr className="border-b border-border bg-muted">
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Asset</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Requested By</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Issue Description</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Priority</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cost</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-5 py-14 text-center text-sm text-white/30">No maintenance requests found.</td></tr>
+                <tr><td colSpan={7} className="px-5 py-14 text-center text-sm text-muted-foreground/80">No maintenance requests found.</td></tr>
               ) : (
                 paginated.map((r) => (
-                  <tr key={r.id} className="hover:bg-white/2 transition-colors group">
+                  <tr key={r.id} className="hover:bg-muted transition-colors group">
                     <td className="px-5 py-4">
                       <div>
                         <span className="font-mono text-xs font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">{r.assetTag}</span>
-                        <p className="text-sm font-medium text-white mt-1">{r.assetName}</p>
+                        <p className="text-sm font-medium text-foreground mt-1">{r.assetName}</p>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-white/60">{r.requestedBy}</td>
-                    <td className="px-5 py-4 text-white/50 max-w-[240px] truncate" title={r.issue}>{r.issue}</td>
+                    <td className="px-5 py-4 text-muted-foreground">{r.requestedBy}</td>
+                    <td className="px-5 py-4 text-muted-foreground max-w-[240px] truncate" title={r.issue}>{r.issue}</td>
                     <td className="px-5 py-4"><PriorityBadge priority={r.priority} /></td>
-                    <td className="px-5 py-4 text-white/60 tabular-nums font-medium">{r.cost ? `$${r.cost}` : '—'}</td>
+                    <td className="px-5 py-4 text-muted-foreground tabular-nums font-medium">{r.cost ? `$${r.cost}` : '—'}</td>
                     <td className="px-5 py-4"><StatusBadge status={r.status} /></td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -304,7 +304,7 @@ export default function MaintenancePage() {
                   <option value="" disabled>Select asset…</option>
                   {ASSETS.map((a) => <option key={a.tag} value={a.tag}>{a.tag} — {a.name}</option>)}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
               </div>
             </Field>
             <Field label="Requested By">
@@ -315,14 +315,14 @@ export default function MaintenancePage() {
                 <select value={form.priority} onChange={(e) => setForm((p) => ({ ...p, priority: e.target.value as Priority }))} className={selectCls}>
                   {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
               </div>
             </Field>
             <Field label="Issue Description">
-              <textarea required rows={3} placeholder="Please describe the issue in detail…" value={form.issue} onChange={(e) => setForm((p) => ({ ...p, issue: e.target.value }))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition resize-none" />
+              <textarea required rows={3} placeholder="Please describe the issue in detail…" value={form.issue} onChange={(e) => setForm((p) => ({ ...p, issue: e.target.value }))} className="w-full rounded-lg border border-border bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition resize-none" />
             </Field>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setShowCreate(false)} className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors">Cancel</button>
+              <button type="button" onClick={() => setShowCreate(false)} className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Cancel</button>
               <button type="submit" className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">Submit Request</button>
             </div>
           </form>

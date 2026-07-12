@@ -1,7 +1,7 @@
-import { ArrowRight, Package, Users, BookOpen, Zap, BarChart3, CheckCircle, ArrowDown, Menu, X } from 'lucide-react'
+import { ArrowRight, Package, Users, BookOpen, Zap, BarChart3, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
-import { PhoneFlowDemo } from './components/phone-flow-demo'
 import { LandingNav } from './components/landing-nav'
+import { HowItWorksSection } from './components/how-it-works-section'
 
 export const metadata = {
   title: 'AssetFlow — Enterprise Asset Management',
@@ -14,8 +14,8 @@ export default function Page() {
       <LandingNav />
 
       {/* Hero Section */}
-      <section id="hero" className="relative overflow-hidden bg-gradient-to-b from-background to-secondary/5">
-        <div className="mx-auto max-w-7xl px-6 py-32 sm:px-8 sm:py-40">
+      <section id="hero" className="relative overflow-hidden bg-gradient-to-b from-background to-secondary/5 min-h-screen flex items-center">
+        <div className="mx-auto max-w-7xl px-6 py-16 sm:px-8 w-full">
           <div className="space-y-12 text-center">
             <div className="space-y-6">
               <div className="inline-block">
@@ -47,7 +47,7 @@ export default function Page() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="border-t border-border py-20 sm:py-28">
+      <section id="features" className="border-t border-border min-h-[80vh] flex items-center py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <div className="space-y-16">
             <div className="space-y-4 text-center">
@@ -106,57 +106,10 @@ export default function Page() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="border-t border-border h  overflow-hidden">
-        <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-12 md:py-20">
-          <div className="mb-8 md:mb-10 flex flex-col gap-2">
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight">How It Works</h2>
-            <p className="text-base md:text-lg text-muted-foreground max-w-prose font-medium">
-              Streamlined workflow for asset management from registration to resolution.
-            </p>
-          </div>
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 sm:gap-6 md:gap-8 lg:gap-10">
-            {/* Register */}
-            <div className="flex flex-col items-center gap-3 sm:gap-4 lg:gap-5 flex-1 min-w-0">
-              <div className="w-full max-w-[240px] sm:max-w-[280px] md:max-w-[300px] lg:max-w-none">
-                <PhoneFlowDemo staticStep="register" showArrows={false} />
-              </div>
-              <h3 className="text-sm md:text-base font-semibold tracking-tight text-center">Register Assets</h3>
-              <div className="lg:hidden flex justify-center pt-1" aria-hidden>
-                <ArrowDown className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-              </div>
-            </div>
-            {/* Desktop arrow */}
-            <div className="hidden lg:flex items-center justify-center flex-shrink-0" aria-hidden>
-              <ArrowRight className="h-8 w-8 xl:h-10 xl:w-10 text-muted-foreground" />
-            </div>
-            {/* Track */}
-            <div className="flex flex-col items-center gap-3 sm:gap-4 lg:gap-5 flex-1 min-w-0">
-              <div className="w-full max-w-[240px] sm:max-w-[280px] md:max-w-[300px] lg:max-w-none">
-                <PhoneFlowDemo staticStep="track" showArrows={false} />
-              </div>
-              <h3 className="text-sm md:text-base font-semibold tracking-tight text-center">Track & Monitor</h3>
-              <div className="lg:hidden flex justify-center pt-1" aria-hidden>
-                <ArrowDown className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-              </div>
-            </div>
-            {/* Desktop arrow */}
-            <div className="hidden lg:flex items-center justify-center flex-shrink-0" aria-hidden>
-              <ArrowRight className="h-8 w-8 xl:h-10 xl:w-10 text-muted-foreground" />
-            </div>
-            {/* Manage */}
-            <div className="flex flex-col items-center gap-3 sm:gap-4 lg:gap-5 flex-1 min-w-0">
-              <div className="w-full max-w-[240px] sm:max-w-[280px] md:max-w-[300px] lg:max-w-none">
-                <PhoneFlowDemo staticStep="manage" showArrows={false} />
-              </div>
-              <h3 className="text-sm md:text-base font-semibold tracking-tight text-center">Manage & Optimize</h3>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HowItWorksSection />
 
       {/* Benefits */}
-      <section id="benefits" className="border-t border-border py-20 sm:py-28">
+      <section id="benefits" className="border-t border-border min-h-[80vh] flex items-center py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-6 sm:px-8">
           <div className="space-y-16">
             <div className="space-y-4 text-center">
@@ -193,7 +146,7 @@ export default function Page() {
       </section>
 
       {/* CTA Section */}
-      <section className="border-t border-border bg-card py-20 sm:py-28">
+      <section className="border-t border-border bg-card min-h-[80vh] flex items-center py-16 sm:py-20">
         <div className="mx-auto max-w-4xl px-6 sm:px-8">
           <div className="rounded-xl border border-border bg-gradient-to-br from-accent/5 to-secondary/5 p-12 sm:p-16 text-center space-y-8">
             <div className="space-y-4">

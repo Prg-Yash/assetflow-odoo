@@ -71,7 +71,7 @@ export function PhoneFlowDemo({
   return (
     <div className="w-full flex items-center justify-center">
       {/* Outer scalable wrapper for responsiveness */}
-      <div className="[--phone-w:240px] sm:[--phone-w:280px] md:[--phone-w:300px] lg:[--phone-w:300px] xl:[--phone-w:320px] [--phone-h:420px] sm:[--phone-h:480px] md:[--phone-h:550px] lg:[--phone-h:550px] xl:[--phone-h:580px]">
+      <div className="[--phone-w:300px] sm:[--phone-w:300px] md:[--phone-w:300px] lg:[--phone-w:300px] xl:[--phone-w:320px] [--phone-h:520px] sm:[--phone-h:550px] md:[--phone-h:550px] lg:[--phone-h:550px] xl:[--phone-h:580px]">
         {/* Phone shell */}
         <div className="relative mx-auto" style={{ width: 'var(--phone-w)', height: 'var(--phone-h)' }}>
           {/* Bezel / body */}

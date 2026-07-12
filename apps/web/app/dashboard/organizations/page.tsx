@@ -117,7 +117,7 @@ function StatusBadge({ status }: { status: Status }) {
         'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border',
         active
           ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
-          : 'text-white/40 border-white/10 bg-white/5',
+          : 'text-muted-foreground border-border bg-muted',
       ].join(' ')}
     >
       {active ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
@@ -137,13 +137,13 @@ function SearchBar({
 }) {
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? 'Search…'}
-        className="w-full sm:w-72 rounded-lg border border-white/10 bg-white/5 pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
+        className="w-full sm:w-72 rounded-lg border border-border bg-card pl-9 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
       />
     </div>
   )
@@ -212,12 +212,12 @@ function Modal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-white/10 bg-[hsl(240_10%_9%)] shadow-2xl shadow-black/60 overflow-hidden animate-in zoom-in-95 fade-in duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
-          <h3 className="text-base font-semibold text-white">{title}</h3>
+      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-card shadow-xl overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-white hover:bg-white/8 transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -231,7 +231,7 @@ function Modal({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-white/60 uppercase tracking-wide">
+      <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide">
         {label}
       </label>
       {children}
@@ -240,10 +240,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputCls =
-  'w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition'
+  'w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition'
 
 const selectCls =
-  'w-full rounded-lg border border-white/10 bg-[hsl(240_10%_12%)] px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none'
+  'w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition appearance-none'
 
 const emptyForm = {
   name: '',
@@ -271,10 +271,10 @@ function OrgCard({
   return (
     <div
       className={[
-        'relative rounded-2xl border p-5 transition-all duration-200 hover:border-white/15',
+        'relative rounded-2xl border p-5 transition-all duration-200 hover:border-accent/30',
         org.isCurrent
           ? 'border-accent/40 bg-accent/5 shadow-lg shadow-accent/5'
-          : 'border-white/8 bg-white/[0.02] hover:bg-white/[0.04]',
+          : 'border-border bg-card hover:bg-muted',
       ].join(' ')}
     >
       {org.isCurrent && (
@@ -289,46 +289,46 @@ function OrgCard({
           <Building2 className="w-6 h-6 text-accent" />
         </div>
         <div className="min-w-0 flex-1 pr-16">
-          <h3 className="text-base font-semibold text-white truncate">{org.name}</h3>
-          <p className="text-xs text-white/35 mt-0.5 font-mono">{org.slug}</p>
-          <p className="text-xs text-white/50 mt-2">{org.role}</p>
+          <h3 className="text-base font-semibold text-foreground truncate">{org.name}</h3>
+          <p className="text-xs text-foreground/35 mt-0.5 font-mono">{org.slug}</p>
+          <p className="text-xs text-muted-foreground mt-2">{org.role}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-white/6">
+      <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-border">
         <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-white/30 mb-1">
+          <div className="flex items-center justify-center gap-1 text-muted-foreground/80 mb-1">
             <Users className="w-3 h-3" />
           </div>
-          <p className="text-sm font-semibold text-white">{org.members}</p>
-          <p className="text-[10px] text-white/30">Members</p>
+          <p className="text-sm font-semibold text-foreground">{org.members}</p>
+          <p className="text-[10px] text-muted-foreground/80">Members</p>
         </div>
         <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-white/30 mb-1">
+          <div className="flex items-center justify-center gap-1 text-muted-foreground/80 mb-1">
             <Package className="w-3 h-3" />
           </div>
-          <p className="text-sm font-semibold text-white">{org.assets}</p>
-          <p className="text-[10px] text-white/30">Assets</p>
+          <p className="text-sm font-semibold text-foreground">{org.assets}</p>
+          <p className="text-[10px] text-muted-foreground/80">Assets</p>
         </div>
         <div className="text-center">
-          <div className="flex items-center justify-center gap-1 text-white/30 mb-1">
+          <div className="flex items-center justify-center gap-1 text-muted-foreground/80 mb-1">
             <Building2 className="w-3 h-3" />
           </div>
-          <p className="text-sm font-semibold text-white">{org.departments}</p>
-          <p className="text-[10px] text-white/30">Depts</p>
+          <p className="text-sm font-semibold text-foreground">{org.departments}</p>
+          <p className="text-[10px] text-muted-foreground/80">Depts</p>
         </div>
       </div>
 
       {(org.website || org.phone) && (
         <div className="mt-4 space-y-1">
           {org.website && (
-            <p className="flex items-center gap-2 text-xs text-white/40 truncate">
+            <p className="flex items-center gap-2 text-xs text-muted-foreground truncate">
               <Globe className="w-3 h-3 shrink-0" />
               {org.website.replace(/^https?:\/\//, '')}
             </p>
           )}
           {org.phone && (
-            <p className="flex items-center gap-2 text-xs text-white/40">
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <Phone className="w-3 h-3 shrink-0" />
               {org.phone}
             </p>
@@ -351,14 +351,14 @@ function OrgCard({
           )}
           <button
             onClick={() => onEdit(org)}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDelete(org.id)}
             disabled={org.isCurrent}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:pointer-events-none"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -370,7 +370,7 @@ function OrgCard({
         onClick={() => {
           if (!org.isCurrent) onSwitch(org.id)
         }}
-        className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 py-2 text-xs font-semibold text-white/70 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all"
+        className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-border py-2 text-xs font-semibold text-foreground/70 hover:text-foreground hover:bg-muted hover:border-border transition-all"
       >
         <Settings className="w-3.5 h-3.5" />
         Organisation Setup
@@ -586,7 +586,7 @@ export default function DashboardOrganizationsPage() {
             <option value="Auditor">Auditor</option>
             <option value="Employee">Employee</option>
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
         </div>
       </Field>
       <Field label="Status">
@@ -599,14 +599,14 @@ export default function DashboardOrganizationsPage() {
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80 pointer-events-none" />
         </div>
       </Field>
       <div className="flex gap-3 pt-2">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors"
+          className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
         >
           Cancel
         </button>
@@ -625,8 +625,8 @@ export default function DashboardOrganizationsPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Organisations</h2>
-          <p className="text-sm text-white/40">
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">Organisations</h2>
+          <p className="text-sm text-muted-foreground">
             Manage the workspaces you belong to. Select an organisation before configuring setup.
           </p>
         </div>
@@ -649,13 +649,13 @@ export default function DashboardOrganizationsPage() {
         ].map(({ label, value, icon: Icon, truncate }) => (
           <div
             key={label}
-            className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3.5"
+            className="rounded-xl border border-border bg-card px-4 py-3.5"
           >
-            <div className="flex items-center gap-2 text-white/30 mb-1.5">
+            <div className="flex items-center gap-2 text-muted-foreground/80 mb-1.5">
               <Icon className="w-3.5 h-3.5" />
               <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
             </div>
-            <p className={['text-lg font-bold text-white', truncate ? 'truncate' : ''].join(' ')}>
+            <p className={['text-lg font-bold text-foreground', truncate ? 'truncate' : ''].join(' ')}>
               {value}
             </p>
           </div>
@@ -665,12 +665,12 @@ export default function DashboardOrganizationsPage() {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <SearchBar value={search} onChange={setSearch} placeholder="Search organisations…" />
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-white/4 border border-white/8">
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted border border-border">
           <button
             onClick={() => setViewMode('grid')}
             className={[
               'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white',
+              viewMode === 'grid' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
             ].join(' ')}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
@@ -680,7 +680,7 @@ export default function DashboardOrganizationsPage() {
             onClick={() => setViewMode('list')}
             className={[
               'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              viewMode === 'list' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white',
+              viewMode === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
             ].join(' ')}
           >
             <List className="w-3.5 h-3.5" />
@@ -691,9 +691,9 @@ export default function DashboardOrganizationsPage() {
 
       {/* Content */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-white/8 py-16 text-center">
-          <Building2 className="w-10 h-10 text-white/15 mx-auto mb-3" />
-          <p className="text-sm text-white/40">No organisations found.</p>
+        <div className="rounded-xl border border-border py-16 text-center">
+          <Building2 className="w-10 h-10 text-foreground/15 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No organisations found.</p>
           <button
             onClick={() => setShowAdd(true)}
             className="mt-4 text-sm font-semibold text-accent hover:text-accent/80 transition-colors"
@@ -715,41 +715,41 @@ export default function DashboardOrganizationsPage() {
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-white/8 overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/8 bg-white/3">
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Organisation
                   </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Role
                   </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Members
                   </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Assets
                   </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-border">
                 {filtered.map((org) => (
-                  <tr key={org.id} className="hover:bg-white/2 transition-colors group">
+                  <tr key={org.id} className="hover:bg-muted transition-colors group">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-accent/15 flex items-center justify-center shrink-0">
                           <Building2 className="w-4 h-4 text-accent" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-white flex items-center gap-2">
+                          <p className="font-medium text-foreground flex items-center gap-2">
                             {org.name}
                             {org.isCurrent && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/20 text-accent font-bold">
@@ -757,13 +757,13 @@ export default function DashboardOrganizationsPage() {
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-white/35 font-mono">{org.slug}</p>
+                          <p className="text-xs text-foreground/35 font-mono">{org.slug}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-white/70">{org.role}</td>
-                    <td className="px-5 py-4 text-white/70">{org.members}</td>
-                    <td className="px-5 py-4 text-white/70">{org.assets}</td>
+                    <td className="px-5 py-4 text-foreground/70">{org.role}</td>
+                    <td className="px-5 py-4 text-foreground/70">{org.members}</td>
+                    <td className="px-5 py-4 text-foreground/70">{org.assets}</td>
                     <td className="px-5 py-4">
                       <button
                         onClick={() => toggleStatus(org.id)}
@@ -787,21 +787,21 @@ export default function DashboardOrganizationsPage() {
                           onClick={() => {
                             if (!org.isCurrent) handleSwitch(org.id)
                           }}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors"
                           title="Organisation Setup"
                         >
                           <Settings className="w-3.5 h-3.5" />
                         </Link>
                         <button
                           onClick={() => handleEditClick(org)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-accent hover:bg-accent/10 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(org.id)}
                           disabled={org.isCurrent}
-                          className="w-7 h-7 flex items-center justify-center rounded-md text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                          className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:pointer-events-none"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -815,7 +815,7 @@ export default function DashboardOrganizationsPage() {
         </div>
       )}
 
-      <p className="text-xs text-white/25 italic">
+      <p className="text-xs text-muted-foreground/70 italic">
         Switch your active organisation here, then proceed to Organisation Setup to configure
         departments, categories, and employees.
       </p>
@@ -850,9 +850,9 @@ export default function DashboardOrganizationsPage() {
       {deletingId && (
         <Modal title="Delete Organisation" onClose={() => setDeletingId(null)}>
           <div className="space-y-4">
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-muted-foreground">
               Are you sure you want to remove{' '}
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-foreground">
                 {orgs.find((o) => o.id === deletingId)?.name}
               </span>
               ? This action cannot be undone.
@@ -860,13 +860,13 @@ export default function DashboardOrganizationsPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeletingId(null)}
-                className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm font-medium text-white/60 hover:bg-white/5 transition-colors"
+                className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-500 transition-colors"
+                className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-foreground hover:bg-red-500 transition-colors"
               >
                 Delete
               </button>

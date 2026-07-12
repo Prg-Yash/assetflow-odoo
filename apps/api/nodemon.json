@@ -1,0 +1,5 @@
+{
+  "watch": ["src", "../../packages/auth/src", "../../packages/db/src"],
+  "ext": "ts,json",
+  "exec": "tsx src/index.ts"
+}

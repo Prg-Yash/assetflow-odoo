@@ -66,7 +66,7 @@ export function PhoneFlowDemo({
     return () => clearInterval(id)
   }, [intervalMs, staticIndex])
 
-  const active = staticIndex !== null ? STEPS[staticIndex] : STEPS[index]
+  const active = ((staticIndex !== null && staticIndex !== -1 ? STEPS[staticIndex] : STEPS[index]) || STEPS[0]) as StepDef
 
   return (
     <div className="w-full flex items-center justify-center">

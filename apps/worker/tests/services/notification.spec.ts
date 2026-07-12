@@ -5,6 +5,11 @@ import {
   MockSMSProvider,
   MockSlackProvider,
 } from "../mocks/smtp.mock.js";
+import { EmailProvider } from "../../src/services/notification/providers/email.provider.js";
+import {
+  ConsoleSMSProvider,
+  ConsoleSlackProvider,
+} from "../../src/services/notification/providers/console.provider.js";
 import { logger } from "../../src/logger/index.js";
 
 describe("Notification Service Unit Tests", () => {
@@ -17,7 +22,7 @@ describe("Notification Service Unit Tests", () => {
     mockSMS = new MockSMSProvider();
     mockSlack = new MockSlackProvider();
 
-    // Inject the mock providers into the private fields of NotificationService
+    // Inject the mock providers into the private fields of NotificationService for unit tests
     (notificationService as any).emailProvider = mockEmail;
     (notificationService as any).smsProvider = mockSMS;
     (notificationService as any).slackProvider = mockSlack;
@@ -25,6 +30,7 @@ describe("Notification Service Unit Tests", () => {
     vi.spyOn(logger, "debug").mockImplementation(() => logger);
     vi.spyOn(logger, "warn").mockImplementation(() => logger);
     vi.spyOn(logger, "error").mockImplementation(() => logger);
+    vi.spyOn(logger, "info").mockImplementation(() => logger);
   });
 
   it("should route email notifications to the designated EmailProvider", async () => {
@@ -83,5 +89,28 @@ describe("Notification Service Unit Tests", () => {
     vi.spyOn(mockEmail, "send").mockRejectedValue(new Error("SMTP connection timeout"));
 
     await expect(notificationService.sendEmail(emailOpts)).rejects.toThrow("SMTP connection timeout");
+  });
+
+  it("should send a real email using the real EmailProvider if configured", async () => {
+    // Restore the real provider instances to test actual transmission pathways
+    (notificationService as any).emailProvider = new EmailProvider();
+    (notificationService as any).smsProvider = new ConsoleSMSProvider();
+    (notificationService as any).slackProvider = new ConsoleSlackProvider();
+
+    // Restore logger spies to print real output details during this integration step
+    vi.restoreAllMocks();
+
+    const realEmailOpts = {
+      to: "shindearyan179@gmail.com",
+      subject: "AssetFlow Notification Service Real Verification Check",
+      template: "notification_spec_verification",
+      context: {
+        timestamp: new Date().toISOString(),
+        testType: "Real SMTP Dispatch via vitest:notifications",
+      },
+    };
+
+    // This will execute AWS SES / Gmail fallback delivery based on your .env configurations
+    await expect(notificationService.sendEmail(realEmailOpts)).resolves.not.toThrow();
   });
 });

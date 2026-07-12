@@ -1,22 +1,64 @@
 import { Router } from "express";
-import { toNodeHandler } from "better-auth/node";
-import { auth } from "@repo/auth";
 import healthRouter from "./health.route.js";
+import authRouter from "./auth.route.js";
+import mediaRouter from "./media.route.js";
 import protectedRouter from "./protected.route.js";
+import organizationsRouter from "./organizations.route.js";
+import departmentsRouter from "./departments.route.js";
+import locationsRouter from "./locations.route.js";
+import employeesRouter from "./employees.route.js";
+import rolesRouter from "./roles.route.js";
+import invitesRouter from "./invites.route.js";
+import categoriesRouter from "./categories.route.js";
+import vendorsRouter from "./vendors.route.js";
+import purchasesRouter from "./purchases.route.js";
+import assetsRouter from "./assets.route.js";
+import allocationsRouter from "./allocations.route.js";
+import transfersRouter from "./transfers.route.js";
+import bookingsRouter from "./bookings.route.js";
+import maintenanceRouter from "./maintenance.route.js";
+import auditsRouter from "./audits.route.js";
+import dashboardRouter from "./dashboard.route.js";
+import notificationsRouter, { activityLogsRouter } from "./notifications.route.js";
 
 const router = Router();
 
-// Better Auth API route handler
-router.all("/auth/*", (req, res) => {
-  if (req.url.includes("/forget-password") || req.originalUrl.includes("/forget-password")) {
-    req.url = req.url.replace("/forget-password", "/request-password-reset");
-    req.originalUrl = req.originalUrl.replace("/forget-password", "/request-password-reset");
-  }
-  return toNodeHandler(auth)(req, res);
-});
-
-// Register sub-routers
+// Base System / Health
 router.use("/health", healthRouter);
+
+// Authentication & Session (modularized)
+router.use("/auth", authRouter);
+router.use("/media", mediaRouter);
 router.use("/protected", protectedRouter);
+
+// Organization & Tenant Setup
+router.use("/organizations", organizationsRouter);
+router.use("/departments", departmentsRouter);
+router.use("/locations", locationsRouter);
+
+// User & Directory Management
+router.use("/employees", employeesRouter);
+router.use("/roles", rolesRouter);
+router.use("/invites", invitesRouter);
+
+// Master Data & Procurement
+router.use("/categories", categoriesRouter);
+router.use("/vendors", vendorsRouter);
+router.use("/purchases", purchasesRouter);
+
+// Core Assets & QR Catalog
+router.use("/assets", assetsRouter);
+
+// Asset Operations & Lifecycles
+router.use("/allocations", allocationsRouter);
+router.use("/transfers", transfersRouter);
+router.use("/bookings", bookingsRouter);
+router.use("/maintenance", maintenanceRouter);
+router.use("/audits", auditsRouter);
+
+// Dashboard, Reports & Audit Trails
+router.use("/dashboard", dashboardRouter);
+router.use("/notifications", notificationsRouter);
+router.use("/activity-logs", activityLogsRouter);
 
 export default router;

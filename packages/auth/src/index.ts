@@ -13,6 +13,31 @@ export const auth = betterAuth({
     "http://localhost:3000",
     "http://localhost:5001",
   ],
+  user: {
+    additionalFields: {
+      organizationId: {
+        type: "string",
+        required: false,
+      },
+      roleId: {
+        type: "string",
+        required: false,
+      },
+      status: {
+        type: "string",
+        required: false,
+        defaultValue: "ACTIVE",
+      },
+    },
+  },
+  session: {
+    additionalFields: {
+      activeOrganizationId: {
+        type: "string",
+        required: false,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url, token }, request) => {

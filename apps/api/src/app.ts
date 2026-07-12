@@ -24,6 +24,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root landing page / status check
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    service: "AssetFlow Enterprise API Server",
+    version: "1.0.0",
+    status: "ONLINE",
+    documentation: "All API endpoints are mounted under /api/v1",
+    healthCheck: "/api/v1/health",
+  });
+});
+
 // API Router namespaces
 app.use("/api/v1", routes);
 

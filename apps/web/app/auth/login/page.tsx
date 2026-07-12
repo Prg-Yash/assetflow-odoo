@@ -12,6 +12,9 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useSession } from '@/hooks/use-organizations'
+import { useEffect } from 'react'
 import { submitAuth } from '../auth-api'
 
 const FEATURES = [
@@ -23,10 +26,21 @@ const FEATURES = [
 
 export default function LoginPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ email: '', password: '' })
+
+  const { data: sessionData, isLoading: isSessionLoading } = useSession()
+  const user = sessionData?.user
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isSessionLoading && user) {
+      router.push('/dashboard')
+    }
+  }, [user, isSessionLoading, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -47,6 +61,9 @@ export default function LoginPage() {
         password: form.password,
         callbackURL,
       })
+      // Clear React Query cache & force session reload before redirecting to avoid layout race conditions
+      await queryClient.invalidateQueries({ queryKey: ['session'] })
+      await queryClient.refetchQueries({ queryKey: ['session'] })
       router.push(callbackURL)
       router.refresh()
     } catch (err) {

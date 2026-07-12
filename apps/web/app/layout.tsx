@@ -40,6 +40,8 @@ export const viewport: Viewport = {
   ],
 }
 
+import Providers from './providers'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -48,7 +50,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={poppins.variable}>
       <body className="font-sans antialiased bg-background text-foreground">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
